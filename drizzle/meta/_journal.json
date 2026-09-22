@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1788293692731,
+      "tag": "0000_soft_purple_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1788296791761,
+      "tag": "0001_majestic_cloak",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1788353346164,
+      "tag": "0002_optimal_supreme_intelligence",
+      "breakpoints": true
+    }
+  ]
+}
