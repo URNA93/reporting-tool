@@ -1,4 +1,5 @@
 import { MASTER_ADMIN_EMAIL, normalizeEmail, type SessionUser } from "@/lib/auth";
+import { todayInPrague } from "@/lib/deadline";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type Filters = {
@@ -16,6 +17,7 @@ type Filters = {
 
 export async function getDashboardData(user: SessionUser, filters: Filters = {}) {
   const supabase = await createSupabaseServerClient();
+  const currentDate = todayInPrague();
   await supabase.rpc("reporting_sync_current_carryovers");
 
   const { data: profileRows = [] } = await supabase
@@ -106,16 +108,18 @@ export async function getDashboardData(user: SessionUser, filters: Filters = {})
     }
   }
   if (filters.carryover) projectsQuery = projectsQuery.eq("is_carryover", filters.carryover === "yes");
-  if (filters.alert === "no_due") projectsQuery = projectsQuery.is("due_date", null).eq("state", "active");
+  if (filters.alert === "no_due") {
+    projectsQuery = projectsQuery.is("due_date", null).eq("state", "active");
+    appointmentsQuery = appointmentsQuery.is("due_date", null).eq("status", "scheduled");
+  }
   if (filters.alert === "overdue") {
-    const currentDate = today();
     projectsQuery = projectsQuery.lt("due_date", currentDate).eq("state", "active");
     appointmentsQuery = appointmentsQuery.lt("due_date", currentDate).eq("status", "scheduled");
   }
 
-  // Po termínu se vztahuje i na samostatné analýzy, poradenství a úvodní
-  // rozhovory. Jen projektové vlastnosti jejich načtení vylučují.
-  const projectOnlyFilter = Boolean(filters.phase || filters.carryover || filters.alert === "no_due" || filters.processStage === "project");
+  // Po termínu i Bez termínu se vztahují i na samostatné analýzy, poradenství
+  // a úvodní rozhovory. Jen projektové vlastnosti jejich načtení vylučují.
+  const projectOnlyFilter = Boolean(filters.phase || filters.carryover || filters.processStage === "project");
 
   const [reportsResult, projectsResult, appointmentsResult] = await Promise.all([
     reportsQuery,
@@ -185,9 +189,9 @@ export async function getDashboardData(user: SessionUser, filters: Filters = {})
   // reporting_projects; nesmí proto zmizet jen proto, že nejsou samostatnou
   // schůzkou v reporting_appointments. Starší samostatné termíny zachováváme
   // vedle nich kvůli historii a ručně zadaným záznamům.
-  const upcoming = [
+  const upcomingAll = [
     ...projects
-      .filter((project) => project.state === "active" && project.due_date && project.due_date >= today())
+      .filter((project) => project.state === "active" && project.due_date && project.due_date >= currentDate)
       .map((project) => ({
         id: project.id,
         type: (project.is_carryover ? "fall" : "project") as "fall" | "project",
@@ -199,7 +203,7 @@ export async function getDashboardData(user: SessionUser, filters: Filters = {})
         owner: profileById.get(project.owner_id)?.name ?? "",
       })),
     ...appointments
-      .filter((item) => item.status === "scheduled" && item.due_date && item.due_date >= today())
+      .filter((item) => item.status === "scheduled" && item.due_date && item.due_date >= currentDate)
       .map((item) => ({
         id: item.id,
         type: item.type as "analysis" | "consulting" | "intro",
@@ -211,8 +215,16 @@ export async function getDashboardData(user: SessionUser, filters: Filters = {})
         owner: profileById.get(item.owner_id)?.name ?? "",
       })),
   ]
-    .sort((left, right) => `${left.dueDate ?? ""}T${left.dueTime ?? "00:00"}`.localeCompare(`${right.dueDate ?? ""}T${right.dueTime ?? "00:00"}`))
-    .slice(0, 12);
+    .sort((left, right) => `${left.dueDate ?? ""}T${left.dueTime ?? "00:00"}`.localeCompare(`${right.dueDate ?? ""}T${right.dueTime ?? "00:00"}`));
+  const upcoming = upcomingAll.slice(0, 12);
+
+  // Počty musí popisovat tytéž položky, které filtr "Bez termínu" a "Po termínu"
+  // zobrazí v tabulce: aktivní projekty i domluvené analýzy, poradenství a rozhovory.
+  const openAppointments = appointments.filter((appointment) => appointment.status === "scheduled");
+  const noDueItems = activeProjects.filter((project) => !project.due_date).length
+    + openAppointments.filter((appointment) => !appointment.due_date).length;
+  const overdueItems = activeProjects.filter((project) => project.due_date && project.due_date < currentDate).length
+    + openAppointments.filter((appointment) => appointment.due_date && appointment.due_date < currentDate).length;
 
   return {
     metrics: {
@@ -222,9 +234,9 @@ export async function getDashboardData(user: SessionUser, filters: Filters = {})
       projectVolumeWithoutDueDate,
       projectVolumes,
       falls: projects.filter((project) => project.is_carryover).length,
-      upcomingMeetings: upcoming.length,
-      noDueProjects: activeProjects.filter((project) => !project.due_date).length,
-      overdueProjects: activeProjects.filter((project) => project.due_date && project.due_date < today()).length,
+      upcomingMeetings: upcomingAll.length,
+      noDueItems,
+      overdueItems,
     },
     reports: reports.slice(0, 50).map((report) => ({
       id: report.id,
@@ -284,17 +296,4 @@ export async function getDashboardData(user: SessionUser, filters: Filters = {})
       })),
     ],
   };
-}
-
-function today() {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Europe/Prague",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(new Date());
-  const part = (type: Intl.DateTimeFormatPartTypes) => parts.find((entry) => entry.type === type)?.value;
-  // Datum termínu ukládáme jako ISO řetězec. Sestavíme proto i dnešek
-  // explicitně jako YYYY-MM-DD; formát `en-CA` není mezi runtime vždy stejný.
-  return `${part("year")}-${part("month")}-${part("day")}`;
 }

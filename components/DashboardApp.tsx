@@ -83,8 +83,8 @@ type DashboardData = {
     projectVolumes: Record<string, number>;
     falls: number;
     upcomingMeetings: number;
-    noDueProjects: number;
-    overdueProjects: number;
+    noDueItems: number;
+    overdueItems: number;
   };
   reports: Array<{
     id: string;
@@ -623,9 +623,9 @@ export default function DashboardApp({
         )}
         <article className="metric-card accent"><CalendarClock /><span>Blízké termíny</span><strong>{data.metrics.upcomingMeetings}</strong></article>
       </section>
-      {user.canManageReports && (data.metrics.noDueProjects > 0 || data.metrics.overdueProjects > 0) && (
+      {user.canManageReports && (data.metrics.noDueItems > 0 || data.metrics.overdueItems > 0) && (
         <div className="manager-warning">
-          <strong>Vyžaduje akci:</strong> {data.metrics.noDueProjects} aktivních projektů bez termínu · {data.metrics.overdueProjects} po termínu.{data.metrics.falls > 0 ? ` ${data.metrics.falls} položek je označeno jako přenesených z minulého období.` : ""}
+          <strong>Vyžaduje akci:</strong> {data.metrics.noDueItems} aktivních položek bez termínu · {data.metrics.overdueItems} po termínu.{data.metrics.falls > 0 ? ` ${data.metrics.falls} položek je označeno jako přenesených z minulého období.` : ""}
         </div>
       )}
 

@@ -7,6 +7,8 @@ import { createClient } from "@supabase/supabase-js";
 
 // Execute the production loader, with only its auth/config dependencies replaced.
 // The real Supabase query builder serializes filters; no live accounts are used.
+import * as deadline from "../lib/deadline.ts";
+
 const source = await readFile(new URL("../lib/data.ts", import.meta.url), "utf8");
 const compiled = ts.transpileModule(source, {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
@@ -96,6 +98,7 @@ function fixture(user, { empty = false, withAppointments = false, appointmentTyp
   factory((id) => {
     if (id === "@/lib/auth") return { MASTER_ADMIN_EMAIL: masterEmail, normalizeEmail: (email) => email.trim().toLowerCase() };
     if (id === "@/lib/supabase/server") return { createSupabaseServerClient: async () => client };
+    if (id === "@/lib/deadline") return deadline;
     throw new Error(`Unexpected import: ${id}`);
   }, exports);
   return { load: (filters) => exports.getDashboardData(user, filters), requests };
@@ -224,7 +227,7 @@ test("the overdue filter uses Prague's ISO date and returns only active projects
 
   assert.deepEqual(data.items.map((item) => item.id), ["own-a"]);
   assert.equal(data.metrics.projectVolumes.BU, 100);
-  assert.equal(data.metrics.overdueProjects, 1);
+  assert.equal(data.metrics.overdueItems, 1);
   assert.equal(data.reports[0].itemCount, 1);
   assert.equal(data.upcoming.length, 0);
 });
