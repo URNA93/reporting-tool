@@ -9,7 +9,7 @@ type Filters = {
   userId?: string | null;
   state?: "active" | "completed" | "cancelled" | null;
   phase?: "new" | "contact" | "analysis" | "offer" | "signature" | "processing" | null;
-  processStage?: "project" | "analysis" | "consulting" | null;
+  processStage?: "project" | "analysis" | "consulting" | "intro" | null;
   carryover?: "yes" | "no" | null;
   alert?: "no_due" | "overdue" | null;
 };
@@ -43,7 +43,7 @@ export async function getDashboardData(user: SessionUser, filters: Filters = {})
     .limit(250);
   let projectsQuery = supabase
     .from("reporting_projects")
-    .select("id,owner_id,source_report_id,period_start,period_end,previous_project_id,name,description,value,unit,state,phase,process_stage,moved_to_analysis_at,moved_to_consulting_at,due_date,is_carryover,cancellation_reason,created_at,updated_at")
+    .select("id,owner_id,source_report_id,period_start,period_end,previous_project_id,name,description,value,unit,state,phase,process_stage,moved_to_analysis_at,moved_to_consulting_at,due_date,due_time,is_carryover,cancellation_reason,created_at,updated_at")
     .is("deleted_at", null)
     .order("updated_at", { ascending: false })
     .limit(500);
@@ -94,15 +94,28 @@ export async function getDashboardData(user: SessionUser, filters: Filters = {})
   }
   if (filters.phase) projectsQuery = projectsQuery.eq("phase", filters.phase);
   if (filters.processStage) {
-    projectsQuery = projectsQuery.eq("process_stage", filters.processStage);
-    if (filters.processStage === "analysis") appointmentsQuery = appointmentsQuery.eq("type", "analysis");
-    if (filters.processStage === "consulting") appointmentsQuery = appointmentsQuery.eq("type", "consulting");
+    if (filters.processStage === "intro") {
+      // Úvodní rozhovor je samostatná termínová položka, ne procesní fáze
+      // projektu. V jednom filtru proto vrací jen tento typ appointmentu.
+      projectsQuery = projectsQuery.eq("id", "00000000-0000-0000-0000-000000000000");
+      appointmentsQuery = appointmentsQuery.eq("type", "intro");
+    } else {
+      projectsQuery = projectsQuery.eq("process_stage", filters.processStage);
+      if (filters.processStage === "analysis") appointmentsQuery = appointmentsQuery.eq("type", "analysis");
+      if (filters.processStage === "consulting") appointmentsQuery = appointmentsQuery.eq("type", "consulting");
+    }
   }
   if (filters.carryover) projectsQuery = projectsQuery.eq("is_carryover", filters.carryover === "yes");
   if (filters.alert === "no_due") projectsQuery = projectsQuery.is("due_date", null).eq("state", "active");
-  if (filters.alert === "overdue") projectsQuery = projectsQuery.lt("due_date", today()).eq("state", "active");
+  if (filters.alert === "overdue") {
+    const currentDate = today();
+    projectsQuery = projectsQuery.lt("due_date", currentDate).eq("state", "active");
+    appointmentsQuery = appointmentsQuery.lt("due_date", currentDate).eq("status", "scheduled");
+  }
 
-  const projectOnlyFilter = Boolean(filters.phase || filters.carryover || filters.alert || filters.processStage === "project");
+  // Po termínu se vztahuje i na samostatné analýzy, poradenství a úvodní
+  // rozhovory. Jen projektové vlastnosti jejich načtení vylučují.
+  const projectOnlyFilter = Boolean(filters.phase || filters.carryover || filters.alert === "no_due" || filters.processStage === "project");
 
   const [reportsResult, projectsResult, appointmentsResult] = await Promise.all([
     reportsQuery,
@@ -138,7 +151,7 @@ export async function getDashboardData(user: SessionUser, filters: Filters = {})
   for (const appointment of appointments) if (appointment.report_id) countByReport.set(appointment.report_id, (countByReport.get(appointment.report_id) ?? 0) + 1);
   // Odvozené reporty i všechny metriky vycházejí z přesně stejné, již
   // filtrované množiny položek. Díky tomu se seznam, součty a termíny nerozejdou.
-  const hasItemFilter = Boolean(filters.periodStart || filters.periodEnd || filters.from || filters.to || filters.state || filters.processStage || projectOnlyFilter);
+  const hasItemFilter = Boolean(filters.periodStart || filters.periodEnd || filters.from || filters.to || filters.state || filters.processStage || filters.alert || projectOnlyFilter);
   const reports = rawReports.filter((report) => !hasItemFilter || (countByReport.get(report.id) ?? 0) > 0);
 
   const activeProjects = projects.filter((project) => project.state === "active");
@@ -167,18 +180,39 @@ export async function getDashboardData(user: SessionUser, filters: Filters = {})
       projectVolumes.BU = (projectVolumes.BU ?? 0) + Number(appointment.value_bu);
     }
   }
-  const upcoming = appointments
-    .filter((item) => item.status === "scheduled" && item.due_date && item.due_date >= today())
-    .slice(0, 12)
-    .map((item) => ({
-      id: item.id,
-      type: item.type,
-      personName: item.client_name,
-      description: item.description,
-      dueDate: item.due_date,
-      dueTime: item.due_time ? String(item.due_time).slice(0, 5) : null,
-      owner: profileById.get(item.owner_id)?.name ?? "",
-    }));
+  // Termín projektu patří do kalendáře bez ohledu na jeho procesní fázi.
+  // Analýza a poradenství vzniklé posunem jsou stále tentýž záznam v
+  // reporting_projects; nesmí proto zmizet jen proto, že nejsou samostatnou
+  // schůzkou v reporting_appointments. Starší samostatné termíny zachováváme
+  // vedle nich kvůli historii a ručně zadaným záznamům.
+  const upcoming = [
+    ...projects
+      .filter((project) => project.state === "active" && project.due_date && project.due_date >= today())
+      .map((project) => ({
+        id: project.id,
+        type: (project.is_carryover ? "fall" : "project") as "fall" | "project",
+        processStage: project.process_stage as "project" | "analysis" | "consulting",
+        personName: project.name,
+        description: project.description,
+        dueDate: project.due_date,
+        dueTime: project.due_time ? String(project.due_time).slice(0, 5) : null,
+        owner: profileById.get(project.owner_id)?.name ?? "",
+      })),
+    ...appointments
+      .filter((item) => item.status === "scheduled" && item.due_date && item.due_date >= today())
+      .map((item) => ({
+        id: item.id,
+        type: item.type as "analysis" | "consulting" | "intro",
+        processStage: null,
+        personName: item.client_name,
+        description: item.description,
+        dueDate: item.due_date,
+        dueTime: item.due_time ? String(item.due_time).slice(0, 5) : null,
+        owner: profileById.get(item.owner_id)?.name ?? "",
+      })),
+  ]
+    .sort((left, right) => `${left.dueDate ?? ""}T${left.dueTime ?? "00:00"}`.localeCompare(`${right.dueDate ?? ""}T${right.dueTime ?? "00:00"}`))
+    .slice(0, 12);
 
   return {
     metrics: {
@@ -217,7 +251,7 @@ export async function getDashboardData(user: SessionUser, filters: Filters = {})
         amount: project.value === null ? null : Number(project.value),
         unit: project.unit,
         dueDate: project.due_date,
-        dueTime: null,
+        dueTime: project.due_time ? String(project.due_time).slice(0, 5) : null,
         status: project.state,
         phase: project.phase,
         processStage: project.process_stage as "project" | "analysis" | "consulting",
@@ -253,10 +287,14 @@ export async function getDashboardData(user: SessionUser, filters: Filters = {})
 }
 
 function today() {
-  return new Intl.DateTimeFormat("en-CA", {
+  const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Europe/Prague",
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
-  }).format(new Date());
+  }).formatToParts(new Date());
+  const part = (type: Intl.DateTimeFormatPartTypes) => parts.find((entry) => entry.type === type)?.value;
+  // Datum termínu ukládáme jako ISO řetězec. Sestavíme proto i dnešek
+  // explicitně jako YYYY-MM-DD; formát `en-CA` není mezi runtime vždy stejný.
+  return `${part("year")}-${part("month")}-${part("day")}`;
 }

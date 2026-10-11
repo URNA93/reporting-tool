@@ -26,7 +26,7 @@ const ownUser = {
 const masterUser = { ...ownUser, id: masterId, email: masterEmail, role: "admin", canManageReports: true };
 const managerUser = { ...ownUser, role: "manager", canManageReports: true };
 
-function fixture(user, { empty = false, withAppointments = false, appointmentDueDate = "2026-09-09", projectState = "active", projectPhase = "new", projectStates = [], projectDueDates = [] } = {}) {
+function fixture(user, { empty = false, withAppointments = false, appointmentType = "consulting", appointmentDueDate = "2026-09-09", projectState = "active", projectPhase = "new", projectStates = [], projectDueDates = [], projectStages = [] } = {}) {
   const period = { period_start: "2026-09-02", period_end: "2026-10-06", deleted_at: null };
   const profile = (id, email) => ({ id, name: id, email, status: "active", role: "user", position: "T" });
   const profiles = [profile(ownerId, ownUser.email), profile(otherId, "other@gfsgroup.cz")];
@@ -34,10 +34,11 @@ function fixture(user, { empty = false, withAppointments = false, appointmentDue
   const report = (id, user_id) => ({ ...period, id, user_id, summary: "", sync_status: "synced" });
   const project = (id, owner_id, source_report_id, value, index) => ({
     ...period, id, owner_id, source_report_id, name: id, description: "", value,
-    unit: "BU", state: projectStates[index] ?? projectState, phase: projectPhase, due_date: projectDueDates[index] ?? null, is_carryover: false,
+    unit: "BU", state: projectStates[index] ?? projectState, phase: projectPhase,
+    process_stage: projectStages[index] ?? "project", due_date: projectDueDates[index] ?? null, is_carryover: false,
   });
   const appointment = (id, owner_id, report_id, status) => ({
-    ...period, id, owner_id, report_id, type: "consulting", client_name: id, description: "", value_bu: 10,
+    ...period, id, owner_id, report_id, type: appointmentType, client_name: id, description: "", value_bu: appointmentType === "consulting" ? 10 : null,
     due_date: appointmentDueDate, due_time: "10:00", status, note: "",
   });
   const rows = {
@@ -82,6 +83,7 @@ function fixture(user, { empty = false, withAppointments = false, appointmentDue
               case "is": return value === "null" && row[column] === null;
               case "gte": return row[column] >= value;
               case "lte": return row[column] <= value;
+              case "lt": return row[column] < value;
               default: throw new Error(`Unexpected filter: ${filter}`);
             }
           });
@@ -152,6 +154,34 @@ test("a dated appointment appears in the reporting period containing its due dat
   assert.equal(data.metrics.upcomingMeetings, 1);
 });
 
+test("manager can filter another user's introductory conversations", async () => {
+  const { load } = fixture(managerUser, {
+    withAppointments: true,
+    appointmentType: "intro",
+    appointmentDueDate: "2099-09-25",
+  });
+
+  const data = await load({ userId: ownerId, processStage: "intro" });
+  assert.deepEqual(data.items.map((item) => item.type), ["intro"]);
+  assert.equal(data.reports[0].itemCount, 1);
+  assert.equal(data.metrics.upcomingMeetings, 1);
+  assert.equal(data.metrics.projectVolumes.BU ?? 0, 0);
+});
+
+test("a project keeps its type and appears among upcoming terms after moving to analysis or consulting", async () => {
+  const { load } = fixture(managerUser, {
+    projectDueDates: ["2026-10-30", "2026-11-01"],
+    projectStages: ["analysis", "consulting"],
+  });
+
+  const data = await load({ userId: ownerId, periodStart: "2026-10-07", periodEnd: "2026-11-03", state: "active" });
+  assert.deepEqual(data.items.map((item) => item.id), ["own-a", "own-b"]);
+  assert.deepEqual(data.items.map((item) => item.type), ["project", "project"]);
+  assert.deepEqual(data.items.map((item) => item.processStage), ["analysis", "consulting"]);
+  assert.deepEqual(data.upcoming.map((item) => item.id), ["own-a", "own-b"]);
+  assert.deepEqual(data.upcoming.map((item) => item.processStage), ["analysis", "consulting"]);
+});
+
 test("OD and DO filter due dates, and metrics follow the exact same item selection", async () => {
   const { load } = fixture(managerUser, {
     withAppointments: true,
@@ -184,6 +214,19 @@ test("the no-due filter is a shared selection for items, metrics, reports and up
   assert.equal(data.metrics.projectVolumeWithoutDueDate, 200);
   assert.equal(data.metrics.upcomingMeetings, 0);
   assert.equal(data.reports[0].itemCount, 1);
+});
+
+test("the overdue filter uses Prague's ISO date and returns only active projects past their due date", async () => {
+  const { load } = fixture(managerUser, {
+    projectDueDates: ["2000-01-01", "2099-01-01", "2099-01-01", "2099-01-01"],
+  });
+  const data = await load({ alert: "overdue" });
+
+  assert.deepEqual(data.items.map((item) => item.id), ["own-a"]);
+  assert.equal(data.metrics.projectVolumes.BU, 100);
+  assert.equal(data.metrics.overdueProjects, 1);
+  assert.equal(data.reports[0].itemCount, 1);
+  assert.equal(data.upcoming.length, 0);
 });
 
 test("active projects are split exclusively by due date and completed projects stay out of the default view", async () => {
@@ -259,4 +302,30 @@ test("an actually empty account remains empty", async () => {
   const data = await fixture(ownUser, { empty: true }).load();
   assert.equal(data.items.length, 0);
   assert.equal(data.reports.length, 0);
+});
+
+
+test("past period overdue filter includes scheduled appointments and projects in every process", async () => {
+  for (const appointmentType of ["analysis", "consulting", "intro"]) {
+    const { load } = fixture(managerUser, {
+      withAppointments: true, appointmentType, appointmentDueDate: "2000-09-10",
+      projectDueDates: ["2000-09-09", "2000-10-20", "2000-09-11"],
+    });
+    const data = await load({ userId: ownerId, periodStart: "2000-09-01", periodEnd: "2000-09-30", alert: "overdue" });
+    assert.deepEqual(data.items.map((item) => item.id), ["own-a", "own-scheduled"]);
+    assert.equal(data.metrics.projectVolumeWithDueDate, appointmentType === "consulting" ? 110 : 100);
+    assert.equal(data.metrics.projectVolumes.BU, appointmentType === "consulting" ? 110 : 100);
+    assert.equal(data.upcoming.length, 0);
+    const stageOnly = await load({ userId: ownerId, periodStart: "2000-09-01", periodEnd: "2000-09-30", alert: "overdue", processStage: appointmentType });
+    assert.deepEqual(stageOnly.items.map((item) => item.id), ["own-scheduled"]);
+  }
+});
+
+test("overdue appointment selection still respects dates, completion and project-only filters", async () => {
+  const { load } = fixture(managerUser, { withAppointments: true, appointmentDueDate: "2000-09-10" });
+  assert.equal((await load({ alert: "overdue", from: "2000-09-11" })).items.length, 0);
+  assert.equal((await load({ alert: "overdue", state: "completed" })).items.length, 0);
+  assert.equal((await load({ alert: "overdue", processStage: "project" })).items.length, 0);
+  assert.equal((await load({ alert: "overdue", carryover: "yes" })).items.length, 0);
+  assert.equal((await fixture(managerUser, { withAppointments: true, appointmentDueDate: "2099-09-10" }).load({ alert: "overdue" })).items.length, 0);
 });

@@ -19,20 +19,19 @@ export async function PATCH(request: Request) {
       .maybeSingle();
     if (!project) return Response.json({ error: "Projekt nebyl nalezen." }, { status: 404 });
     if (project.owner_id !== user.id && !user.canManageReports) return Response.json({ error: "K tomuto projektu nemáš přístup." }, { status: 403 });
-    const { error } = await supabase.from("reporting_projects").update({
-      name: parsed.data.personName,
-      description: parsed.data.description,
-      value: parsed.data.amount,
-      state: parsed.data.status,
-      phase: parsed.data.phase ?? "new",
-      due_date: parsed.data.dueDate,
-      cancellation_reason: parsed.data.status === "cancelled" ? parsed.data.note : null,
-      updated_at: new Date().toISOString(),
-    }).eq("id", parsed.data.itemId);
+    const { error } = await supabase.rpc("reporting_update_project", {
+      p_project_id: parsed.data.itemId,
+      p_name: parsed.data.personName,
+      p_description: parsed.data.description,
+      p_value: parsed.data.amount,
+      p_due_date: parsed.data.dueDate,
+      p_due_time: parsed.data.dueTime,
+      p_state: parsed.data.status,
+      p_phase: parsed.data.phase ?? "new",
+      p_note: parsed.data.note,
+      p_owner_id: parsed.data.ownerId,
+    });
     if (error) return Response.json({ error: error.message }, { status: 400 });
-    if (project.source_report_id) {
-      await supabase.from("reporting_reports").update({ sync_status: "pending", sync_error: null, updated_at: new Date().toISOString() }).eq("id", project.source_report_id);
-    }
     return Response.json({ ok: true, message: "Projekt byl upraven." });
   }
 
@@ -61,6 +60,7 @@ export async function PATCH(request: Request) {
       p_due_time: parsed.data.dueTime,
       p_status: parsed.data.status,
       p_note: parsed.data.note,
+      p_owner_id: parsed.data.ownerId,
     });
     if (error) return Response.json({ error: error.message }, { status: 400 });
     return Response.json({ ok: true, message: parsed.data.type === "consulting" ? "Analýza byla přesunuta do poradenství." : "Poradenství bylo vráceno do analýzy." });
@@ -74,6 +74,7 @@ export async function PATCH(request: Request) {
     p_due_time: parsed.data.dueTime,
     p_status: parsed.data.status,
     p_note: parsed.data.note,
+    p_owner_id: parsed.data.ownerId,
   });
   if (error) return Response.json({ error: error.message }, { status: 400 });
   return Response.json({ ok: true, message: "Termín byl upraven." });

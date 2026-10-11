@@ -92,7 +92,7 @@ export const createInvitationSchema = z.object({
 export const revokeInvitationSchema = z.object({ invitationId: z.string().uuid() });
 
 export const updateReportItemSchema = reportItemBase
-  .extend({ itemId: z.string().uuid() })
+  .extend({ itemId: z.string().uuid(), ownerId: z.string().uuid().nullable().optional() })
   .superRefine(validateReportItem);
 export const deleteReportItemSchema = z.object({
   itemId: z.string().uuid(),
@@ -112,7 +112,7 @@ export const dashboardFilterSchema = z.object({
   userId: z.string().uuid().optional(),
   state: z.enum(["active", "completed", "cancelled"]).optional(),
   phase: phase.optional(),
-  processStage: z.enum(["project", "analysis", "consulting"]).optional(),
+  processStage: z.enum(["project", "analysis", "consulting", "intro"]).optional(),
   carryover: z.enum(["yes", "no"]).optional(),
   alert: z.enum(["no_due", "overdue"]).optional(),
 });

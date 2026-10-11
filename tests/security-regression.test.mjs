@@ -156,6 +156,17 @@ test("new report form does not include a short summary field", async () => {
   assert.match(dashboard, /summary: ""/);
 });
 
+test("introductory conversations are accepted by report creation and deletion", async () => {
+  const validation = await readFile(new URL("lib/validation.ts", root), "utf8");
+  const migration = await readFile(new URL("supabase/migrations/202609220003_enable_introductory_conversations.sql", root), "utf8");
+
+  assert.match(validation, /\["project", "analysis", "consulting", "intro"\]/);
+  assert.match(migration, /add value if not exists 'intro'/);
+  assert.match(migration, /item_type in \('analysis','consulting','intro'\)/);
+  assert.match(migration, /p_item_type in \('analysis', 'consulting', 'intro'\)/);
+  assert.match(migration, /Úvodní rozhovor musí mít datum a čas/);
+});
+
 test("report editing opens the report's stored items instead of the summary editor", async () => {
   const data = await readFile(new URL("lib/data.ts", root), "utf8");
   const dashboard = await readFile(new URL("components/DashboardApp.tsx", root), "utf8");
@@ -217,6 +228,7 @@ test("process filtering and admin corrections use the same secured model", async
   assert.match(route, /processStage/);
   assert.match(data, /projectsQuery = projectsQuery\.eq\("process_stage", filters\.processStage\)/);
   assert.match(data, /appointmentsQuery = appointmentsQuery\.eq\("type", "analysis"\)/);
+  assert.match(data, /appointmentsQuery = appointmentsQuery\.eq\("type", "intro"\)/);
   assert.match(dashboard, /Proces/);
   assert.match(dashboard, /user\.role === "admin"/);
   assert.match(migration, /not public\.reporting_is_admin\(\) and not \(/);
@@ -232,6 +244,25 @@ test("appointment edits use a protected RPC instead of a direct table update", a
   assert.match(migration, /set row_security = off/);
   assert.match(migration, /row\.owner_id <> auth\.uid\(\)/);
   assert.match(migration, /grant execute on function public\.reporting_update_appointment/);
+});
+
+test("consulting project time and manager reassignment are persisted by protected RPCs", async () => {
+  const route = await readFile(new URL("app/api/report-items/route.ts", root), "utf8");
+  const dashboard = await readFile(new URL("components/DashboardApp.tsx", root), "utf8");
+  const data = await readFile(new URL("lib/data.ts", root), "utf8");
+  const migration = await readFile(new URL("supabase/migrations/202609220002_project_time_and_manager_reassignment.sql", root), "utf8");
+
+  assert.match(route, /p_due_time: parsed\.data\.dueTime/);
+  assert.match(route, /p_owner_id: parsed\.data\.ownerId/);
+  assert.match(dashboard, /projectConsulting/);
+  assert.match(dashboard, /Řešitel/);
+  assert.match(data, /due_time/);
+  assert.match(migration, /add column if not exists due_time time/);
+  assert.match(migration, /p\.due_time/);
+  assert.match(migration, /if not public\.reporting_is_manager\(\) then raise exception 'Řešitele může změnit jen manažer'/);
+  assert.match(migration, /reporting_assert_assignable_owner/);
+  assert.match(migration, /not public\.reporting_is_master_email\(profile\.email\)/);
+  assert.match(migration, /security definer/);
 });
 
 test("hidden master account is the only non-company login and is excluded from people APIs", async () => {

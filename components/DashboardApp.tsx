@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   CalendarClock,
-  ChevronRight,
   CircleGauge,
   FolderKanban,
   Pencil,
@@ -11,7 +10,6 @@ import {
   RefreshCw,
   Send,
   Trash2,
-  UserRoundSearch,
   UsersRound,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -56,6 +54,7 @@ type CreatableType = Exclude<ItemType, "fall">;
 type ItemStatus = "active" | "completed" | "scheduled" | "done" | "cancelled";
 type ProjectPhase = "new" | "contact" | "analysis" | "offer" | "signature" | "processing";
 type ProjectProcessStage = "project" | "analysis" | "consulting";
+type ProcessFilter = ProjectProcessStage | "intro";
 type ReportItemDraft = {
   localId: string;
   type: ItemType;
@@ -69,6 +68,7 @@ type ReportItemDraft = {
   phase: ProjectPhase | null;
   processStage: ProjectProcessStage | null;
   note: string;
+  ownerId: string | null;
 };
 
 const ITEMS_PER_PAGE = 20;
@@ -100,6 +100,7 @@ type DashboardData = {
   upcoming: Array<{
     id: string;
     type: ItemType;
+    processStage: ProjectProcessStage | null;
     personName: string;
     description: string;
     dueDate: string | null;
@@ -163,6 +164,10 @@ const processStageLabels: Record<ProjectProcessStage, string> = {
   analysis: "Analýza",
   consulting: "Poradenství",
 };
+const processFilterLabels: Record<ProcessFilter, string> = {
+  ...processStageLabels,
+  intro: "Úvodní rozhovor",
+};
 
 function newItem(type: CreatableType): ReportItemDraft {
   return {
@@ -178,6 +183,7 @@ function newItem(type: CreatableType): ReportItemDraft {
     phase: type === "project" ? "new" : null,
     processStage: type === "project" ? "project" : null,
     note: "",
+    ownerId: null,
   };
 }
 
@@ -423,6 +429,7 @@ export default function DashboardApp({
       phase: item.phase,
       processStage: item.processStage,
       note: item.note,
+      ownerId: item.ownerId,
     });
   }
 
@@ -445,6 +452,7 @@ export default function DashboardApp({
         status: editDraft.status,
         phase: editDraft.phase,
         note: editDraft.note,
+        ownerId: editDraft.ownerId,
       }),
     });
     const result = (await response.json().catch(() => ({}))) as { error?: string; message?: string };
@@ -550,7 +558,7 @@ export default function DashboardApp({
         <div>
           <span className="eyebrow"><CircleGauge /> REPORTING</span>
           <h1>Přehled týmu</h1>
-          <p>Projekty, přepady a nejbližší termíny na jednom místě.</p>
+          <p>Aktuální projekty a nejbližší termíny na jednom místě.</p>
         </div>
         <Button size="lg" className="primary-cta" onClick={() => setReportOpen(true)}>
           <Plus /> Nový report
@@ -592,17 +600,11 @@ export default function DashboardApp({
           <label>Stav položky
             <Select value={stateFilter} onValueChange={(value) => { setStateFilter(value); setItemsPage(1); }}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">Všechny stavy</SelectItem><SelectItem value="active">Aktivní</SelectItem><SelectItem value="completed">Dokončené</SelectItem><SelectItem value="cancelled">Zrušené</SelectItem></SelectContent></Select>
           </label>
-          <label>Fáze
-            <Select value={phaseFilter} onValueChange={(value) => { setPhaseFilter(value); setItemsPage(1); }}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">Všechny fáze</SelectItem>{(Object.keys(phaseLabels) as ProjectPhase[]).map((phase) => <SelectItem key={phase} value={phase}>{phaseLabels[phase]}</SelectItem>)}</SelectContent></Select>
-          </label>
           <label>Proces
-            <Select value={processStageFilter} onValueChange={(value) => { setProcessStageFilter(value); setItemsPage(1); }}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">Všechny procesy</SelectItem>{(Object.keys(processStageLabels) as ProjectProcessStage[]).map((stage) => <SelectItem key={stage} value={stage}>{processStageLabels[stage]}</SelectItem>)}</SelectContent></Select>
+            <Select value={processStageFilter} onValueChange={(value) => { setProcessStageFilter(value); setItemsPage(1); }}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">Všechny procesy</SelectItem>{(Object.keys(processFilterLabels) as ProcessFilter[]).map((stage) => <SelectItem key={stage} value={stage}>{processFilterLabels[stage]}</SelectItem>)}</SelectContent></Select>
           </label>
-          <label>Přepad
-            <Select value={carryoverFilter} onValueChange={(value) => { setCarryoverFilter(value); setItemsPage(1); }}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">Všechny</SelectItem><SelectItem value="yes">Jen přepady</SelectItem><SelectItem value="no">Bez přepadů</SelectItem></SelectContent></Select>
-          </label>
-          <label>Upozornění
-            <Select value={alertFilter} onValueChange={(value) => { setAlertFilter(value); setItemsPage(1); }}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">Všechna</SelectItem><SelectItem value="no_due">Bez termínu</SelectItem><SelectItem value="overdue">Po termínu</SelectItem></SelectContent></Select>
+          <label>Termín
+            <Select value={alertFilter} onValueChange={(value) => { setAlertFilter(value); setItemsPage(1); }}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">Všechny termíny</SelectItem><SelectItem value="no_due">Bez termínu</SelectItem><SelectItem value="overdue">Po termínu</SelectItem></SelectContent></Select>
           </label>
           <Button className="filter-apply" variant="outline" onClick={() => refresh()}><RefreshCw /> Použít</Button>
           <Button variant="ghost" onClick={clearFilters}>Celkový přehled</Button>
@@ -610,7 +612,7 @@ export default function DashboardApp({
       )}
 
       <section className="metric-grid" aria-label="Hlavní ukazatele">
-        <article className="metric-card volume-card"><CalendarClock /><span>Objem projektů s termínem</span><strong>{formatVolumes({ BU: data.metrics.projectVolumeWithDueDate })}</strong></article>
+        <article className="metric-card volume-card"><CircleGauge /><span>Objem v BU</span><strong>{formatVolumes(data.metrics.projectVolumes)}</strong></article>
         {user.canManageReports ? (
           <button type="button" className="metric-card volume-card metric-card-button" onClick={activateNoDueFilter}>
             <FolderKanban /><span>Objem projektů bez termínu</span><strong>{formatVolumes({ BU: data.metrics.projectVolumeWithoutDueDate })}</strong>
@@ -618,18 +620,16 @@ export default function DashboardApp({
         ) : (
           <article className="metric-card volume-card"><FolderKanban /><span>Objem projektů bez termínu</span><strong>{formatVolumes({ BU: data.metrics.projectVolumeWithoutDueDate })}</strong></article>
         )}
-        <article className="metric-card volume-card"><CircleGauge /><span>Objem v BU</span><strong>{formatVolumes(data.metrics.projectVolumes)}</strong></article>
-        <article className="metric-card"><UserRoundSearch /><span>Přepady</span><strong>{data.metrics.falls}</strong></article>
         <article className="metric-card accent"><CalendarClock /><span>Blízké termíny</span><strong>{data.metrics.upcomingMeetings}</strong></article>
       </section>
       {user.canManageReports && (data.metrics.noDueProjects > 0 || data.metrics.overdueProjects > 0) && (
         <div className="manager-warning">
-          <strong>Ke kontrole:</strong> {data.metrics.noDueProjects} aktivních projektů bez termínu · {data.metrics.overdueProjects} po termínu.
+          <strong>Vyžaduje akci:</strong> {data.metrics.noDueProjects} aktivních projektů bez termínu · {data.metrics.overdueProjects} po termínu.{data.metrics.falls > 0 ? ` ${data.metrics.falls} položek je označeno jako přenesených z minulého období.` : ""}
         </div>
       )}
 
       <section className="panel items-panel">
-        <div className="panel-heading"><div><span>CO JE V ŘEŠENÍ</span><h2>Položky v reportech</h2></div><FolderKanban /></div>
+        <div className="panel-heading"><div><span>AKTUÁLNÍ PRÁCE</span><h2>Položky</h2></div><FolderKanban /></div>
         {data.items.length === 0 ? (
           <div className="empty-state compact"><FolderKanban /><p>Zatím nejsou zapsané žádné položky.</p></div>
         ) : (
@@ -644,16 +644,16 @@ export default function DashboardApp({
               <col className="items-table-owner" />
               <col className="items-table-actions" />
             </colgroup>
-            <TableHeader><TableRow><TableHead>Typ</TableHead><TableHead>Člověk / klient</TableHead><TableHead>Co se řeší</TableHead><TableHead>Kolik</TableHead><TableHead>Termín</TableHead><TableHead>Stav / fáze</TableHead><TableHead>Reportér</TableHead><TableHead></TableHead></TableRow></TableHeader>
+            <TableHeader><TableRow><TableHead>Typ</TableHead><TableHead>Člověk / klient</TableHead><TableHead>Co se řeší</TableHead><TableHead>Kolik</TableHead><TableHead>Termín</TableHead><TableHead>Stav / proces</TableHead><TableHead>Reportér</TableHead><TableHead></TableHead></TableRow></TableHeader>
             <TableBody>
               {paginatedItems.map((item) => (
                 <TableRow key={item.id}>
-                  <TableCell><span className={`item-type ${item.type}`}>{typeLabels[item.type]}</span></TableCell>
+                  <TableCell><span className={`item-type ${item.type === "fall" ? "project" : item.type}`}>{item.type === "fall" ? "Projekt" : typeLabels[item.type]}</span></TableCell>
                   <TableCell><strong>{item.personName}</strong></TableCell>
                   <TableCell>{item.description || item.note || "—"}</TableCell>
                   <TableCell>{formatItemValue(item)}</TableCell>
                   <TableCell>{item.dueDate ? `${formatDate(item.dueDate)}${item.dueTime ? ` · ${item.dueTime}` : ""}` : "—"}</TableCell>
-                  <TableCell>{statusLabels[item.status]}{item.processStage && <small>Proces: {processStageLabels[item.processStage]}{item.phase ? ` · Fáze: ${phaseLabels[item.phase]}` : ""}</small>}{!item.processStage && item.phase && <small>Fáze: {phaseLabels[item.phase]}</small>}</TableCell>
+                  <TableCell>{statusLabels[item.status]}{item.processStage && <small>Proces: {processStageLabels[item.processStage]}</small>}{item.isCarryover && <small className="carryover-note">Přenesený z minulého období</small>}</TableCell>
                   <TableCell>{item.owner}</TableCell>
                   <TableCell><div className="row-actions">{item.canEdit && <Button variant="ghost" size="sm" onClick={() => startEdit(item)}><Pencil /> Upravit</Button>}{item.canDelete && <Button variant="ghost" size="sm" onClick={() => deleteItem(item)}><Trash2 /> Smazat</Button>}</div></TableCell>
                 </TableRow>
@@ -698,12 +698,15 @@ export default function DashboardApp({
           <div className="panel-heading"><div><span>DALŠÍ KROKY</span><h2>Nejbližší termíny</h2></div><CalendarClock /></div>
           <div className="schedule-list">
             {data.upcoming.length === 0 ? (
-              <div className="empty-state compact"><CalendarClock /><p>Žádné naplánované analýzy, poradenství ani úvodní rozhovory.</p></div>
+              <div className="empty-state compact"><CalendarClock /><p>Žádné naplánované projekty ani termíny.</p></div>
             ) : data.upcoming.map((item) => (
               <div className="schedule-item" key={item.id}>
                 <time>{item.dueDate ? formatDay(item.dueDate) : "—"}<small>{item.dueTime ?? ""}</small></time>
-                <div><span>{typeSingularLabels[item.type].toUpperCase()}</span><strong>{item.personName}</strong><p>{item.owner}</p></div>
-                <ChevronRight />
+                <div><span>{(item.type === "fall" && item.processStage
+                  ? `${typeSingularLabels.fall} · ${processStageLabels[item.processStage]}`
+                  : item.processStage
+                    ? processStageLabels[item.processStage]
+                    : typeSingularLabels[item.type]).toUpperCase()}</span><strong>{item.personName}</strong><p>{item.owner}</p></div>
               </div>
             ))}
           </div>
@@ -797,6 +800,7 @@ export default function DashboardApp({
               <ReportItemCard
                 item={editDraft}
                 onChange={(patch) => setEditDraft({ ...editDraft, ...patch })}
+                ownerChoices={user.canManageReports ? data.people : undefined}
               />
             </>
           )}
@@ -811,9 +815,20 @@ export default function DashboardApp({
   );
 }
 
-function ReportItemCard({ item, onChange, onRemove }: { item: ReportItemDraft; onChange: (patch: Partial<ReportItemDraft>) => void; onRemove?: () => void }) {
+function ReportItemCard({
+  item,
+  onChange,
+  onRemove,
+  ownerChoices,
+}: {
+  item: ReportItemDraft;
+  onChange: (patch: Partial<ReportItemDraft>) => void;
+  onRemove?: () => void;
+  ownerChoices?: DashboardData["people"];
+}) {
   const intro = item.type === "intro";
   const appointment = item.type === "analysis" || item.type === "consulting" || intro;
+  const projectConsulting = item.type === "project" && item.processStage === "consulting";
   const statusOptions: ItemStatus[] = appointment
     ? ["scheduled", "done", "cancelled"]
     : ["active", "completed", "cancelled"];
@@ -822,10 +837,18 @@ function ReportItemCard({ item, onChange, onRemove }: { item: ReportItemDraft; o
       <div className="report-item-head"><strong>{typeSingularLabels[item.type]}</strong>{onRemove && <Button variant="ghost" size="icon-sm" onClick={onRemove} aria-label="Odstranit položku"><Trash2 /></Button>}</div>
       <div className="item-grid">
         <label>{appointment ? (intro ? "Jméno" : "Jméno klienta") : "Název projektu"}<Input value={item.personName} onChange={(event) => onChange({ personName: event.target.value })} placeholder={appointment ? "Jméno a příjmení" : "Konkrétní projekt"} /></label>
+        {ownerChoices && <label>Řešitel
+          <Select value={item.ownerId ?? undefined} onValueChange={(value) => onChange({ ownerId: value })}>
+            <SelectTrigger><SelectValue placeholder="Vyber řešitele" /></SelectTrigger>
+            <SelectContent>
+              {ownerChoices.map((person) => <SelectItem key={person.id} value={person.id}>{person.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </label>}
         {!intro && <label>{appointment ? "Téma" : "Projekt / popis"}<Input value={item.description} onChange={(event) => onChange({ description: event.target.value })} placeholder={appointment ? "Čeho se schůzka týká" : "Co je v řešení"} /></label>}
         {(item.type === "project" || item.type === "consulting") && <><label>{item.type === "consulting" ? "Objem poradenství" : "Objem projektu"}<Input type="number" min="0" step="0.01" value={item.amount ?? ""} onChange={(event) => onChange({ amount: event.target.value === "" ? null : Number(event.target.value) })} /></label><label>Jednotka<Input value="BU" readOnly aria-readonly="true" /></label></>}
         <label>Termín<Input type="date" value={item.dueDate ?? ""} onChange={(event) => onChange({ dueDate: event.target.value || null })} /></label>
-        {appointment && <label>Čas<Input type="time" value={item.dueTime ?? ""} onChange={(event) => onChange({ dueTime: event.target.value || null })} /></label>}
+        {(appointment || projectConsulting) && <label>Čas<Input type="time" value={item.dueTime ?? ""} onChange={(event) => onChange({ dueTime: event.target.value || null })} /></label>}
         {!appointment && <label>Fáze<Select value={item.phase ?? "new"} onValueChange={(value) => onChange({ phase: value as ProjectPhase })}><SelectTrigger><SelectValue>{phaseLabels[item.phase ?? "new"]}</SelectValue></SelectTrigger><SelectContent>{(Object.keys(phaseLabels) as ProjectPhase[]).map((phase) => <SelectItem key={phase} value={phase}>{phaseLabels[phase]}</SelectItem>)}</SelectContent></Select></label>}
         {!intro && <label>Stav<Select value={item.status} onValueChange={(value) => onChange({ status: value as ItemStatus })}><SelectTrigger><SelectValue>{statusLabels[item.status]}</SelectValue></SelectTrigger><SelectContent>{statusOptions.map((status) => <SelectItem key={status} value={status}>{statusLabels[status]}</SelectItem>)}</SelectContent></Select></label>}
         <label className="wide-field">{item.status === "cancelled" && !appointment ? "Důvod zrušení" : "Poznámka"}<Input value={item.note} onChange={(event) => onChange({ note: event.target.value })} placeholder={item.status === "cancelled" && !appointment ? "Povinné" : "Volitelné"} /></label>
