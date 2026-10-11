@@ -13,6 +13,7 @@ import {
   UsersRound,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { daysOverdue, overdueLabel } from "@/lib/deadline";
 import {
   Combobox,
   ComboboxContent,
@@ -647,13 +648,13 @@ export default function DashboardApp({
             <TableHeader><TableRow><TableHead>Typ</TableHead><TableHead>Člověk / klient</TableHead><TableHead>Co se řeší</TableHead><TableHead>Kolik</TableHead><TableHead>Termín</TableHead><TableHead>Stav / proces</TableHead><TableHead>Reportér</TableHead><TableHead></TableHead></TableRow></TableHeader>
             <TableBody>
               {paginatedItems.map((item) => (
-                <TableRow key={item.id}>
+                <TableRow key={item.id} className={daysOverdue(item) !== null ? "row-overdue" : undefined}>
                   <TableCell><span className={`item-type ${item.type === "fall" ? "project" : item.type}`}>{item.type === "fall" ? "Projekt" : typeLabels[item.type]}</span></TableCell>
                   <TableCell><strong>{item.personName}</strong></TableCell>
                   <TableCell>{item.description || item.note || "—"}</TableCell>
                   <TableCell>{formatItemValue(item)}</TableCell>
                   <TableCell>{item.dueDate ? `${formatDate(item.dueDate)}${item.dueTime ? ` · ${item.dueTime}` : ""}` : "—"}</TableCell>
-                  <TableCell>{statusLabels[item.status]}{item.processStage && <small>Proces: {processStageLabels[item.processStage]}</small>}{item.isCarryover && <small className="carryover-note">Přenesený z minulého období</small>}</TableCell>
+                  <TableCell>{statusLabels[item.status]}{(() => { const overdue = daysOverdue(item); return overdue !== null ? <small className="overdue-note">{overdueLabel(overdue)}</small> : null; })()}{item.processStage && <small>Proces: {processStageLabels[item.processStage]}</small>}{item.isCarryover && <small className="carryover-note">Přenesený z minulého období</small>}</TableCell>
                   <TableCell>{item.owner}</TableCell>
                   <TableCell><div className="row-actions">{item.canEdit && <Button variant="ghost" size="sm" onClick={() => startEdit(item)}><Pencil /> Upravit</Button>}{item.canDelete && <Button variant="ghost" size="sm" onClick={() => deleteItem(item)}><Trash2 /> Smazat</Button>}</div></TableCell>
                 </TableRow>

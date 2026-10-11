@@ -218,6 +218,8 @@ label [data-slot="select-trigger"] { width: 100%; }
 .items-table [data-slot="table-cell"]:nth-child(3), .items-table [data-slot="table-cell"]:nth-child(6) { white-space: normal; }
 .item-type { display: inline-flex; padding: 5px 8px; border-radius: 999px; background: var(--orange-pale); color: var(--orange-deep); font-size: .7rem; font-weight: 900; }
 .carryover-note { color: #8b837d !important; }
+.overdue-note { color: #a52f0c !important; font-weight: 800; }
+.row-overdue > td:first-child { box-shadow: inset 3px 0 0 #d8481a; }
 .optional-label { color: #9b928c; font-size: .75rem; font-weight: 600; }
 .status-pill { display: inline-flex; border-radius: 99px; padding: 5px 8px; background: #eee9e4; color: var(--ink-soft); font-size: .67rem; font-weight: 900; }
 .status-pill.synced, .status-pill.active { background: #e8f5eb; color: #2f7a49; }
