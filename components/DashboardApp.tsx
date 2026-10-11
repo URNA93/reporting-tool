@@ -206,9 +206,7 @@ export default function DashboardApp({
   const [selectedUser, setSelectedUser] = useState("all");
   const [selectedPeriod, setSelectedPeriod] = useState("all");
   const [stateFilter, setStateFilter] = useState("all");
-  const [phaseFilter, setPhaseFilter] = useState("all");
   const [processStageFilter, setProcessStageFilter] = useState("all");
-  const [carryoverFilter, setCarryoverFilter] = useState("all");
   const [alertFilter, setAlertFilter] = useState("all");
   const currentPeriod = reportingPeriods.find((period) => period.relation === "current")!;
   const [start] = useState(currentPeriod.start);
@@ -287,9 +285,7 @@ export default function DashboardApp({
       selectedUser: string;
       selectedPeriod: string;
       stateFilter: string;
-      phaseFilter: string;
       processStageFilter: string;
-      carryoverFilter: string;
       alertFilter: string;
     }> = {},
   ) {
@@ -299,9 +295,7 @@ export default function DashboardApp({
       selectedUser,
       selectedPeriod,
       stateFilter,
-      phaseFilter,
       processStageFilter,
-      carryoverFilter,
       alertFilter,
       ...overrides,
     };
@@ -317,9 +311,7 @@ export default function DashboardApp({
       }
     }
     if (filters && activeFilters.stateFilter !== "all") params.set("state", activeFilters.stateFilter);
-    if (filters && activeFilters.phaseFilter !== "all") params.set("phase", activeFilters.phaseFilter);
     if (filters && activeFilters.processStageFilter !== "all") params.set("processStage", activeFilters.processStageFilter);
-    if (filters && activeFilters.carryoverFilter !== "all") params.set("carryover", activeFilters.carryoverFilter);
     if (filters && activeFilters.alertFilter !== "all") params.set("alert", activeFilters.alertFilter);
     const response = await fetch(`/api/dashboard?${params.toString()}`, {
       cache: "no-store",
@@ -345,9 +337,7 @@ export default function DashboardApp({
     setSelectedUser("all");
     setSelectedPeriod("all");
     setStateFilter("all");
-    setPhaseFilter("all");
     setProcessStageFilter("all");
-    setCarryoverFilter("all");
     setAlertFilter("all");
     setItemsPage(1);
     await refresh(false);
