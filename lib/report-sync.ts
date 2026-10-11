@@ -16,7 +16,7 @@ export async function syncStoredReport(
     ...(projects ?? []).map((item) => ({
       id: item.id, type: item.is_carryover ? "fall" : "project", personName: item.name,
       description: item.description, amount: item.value === null ? null : Number(item.value), unit: item.unit,
-      dueDate: item.due_date, dueTime: null, status: item.state, note: item.cancellation_reason ?? "", createdAt: new Date(item.created_at),
+      dueDate: item.due_date, dueTime: item.due_time ? String(item.due_time).slice(0, 5) : null, status: item.state, note: item.cancellation_reason ?? "", createdAt: new Date(item.created_at),
     })),
     ...(appointments ?? []).map((item) => ({
       id: item.id, type: item.type, personName: item.client_name, description: item.description,

@@ -78,7 +78,7 @@ export async function POST(request: Request) {
   });
 
   if (signupError || !signup.user || signup.user.identities?.length === 0) {
-    await supabase.rpc("reporting_admin_revoke_invitation", { p_invitation_id: invitation.id }).catch(() => undefined);
+    await supabase.rpc("reporting_admin_revoke_invitation", { p_invitation_id: invitation.id }).then(() => undefined, () => undefined);
     return Response.json({ error: "Účet se nepodařilo připravit. Zkontroluj e-mail a zkus to znovu." }, { status: 400 });
   }
 

@@ -5,12 +5,6 @@ import { syncSheetDeletion } from "@/lib/sheet-deletion-sync";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { deleteReportSchema, reportSchema, updateReportSchema } from "@/lib/validation";
 
-export async function GET() {
-  const user = await getSessionUser();
-  if (!user) return Response.json({ error: "Nepřihlášený uživatel." }, { status: 401 });
-  return Response.json(await getDashboardData(user));
-}
-
 export async function POST(request: Request) {
   const user = await getSessionUser();
   if (!user) return Response.json({ error: "Nepřihlášený uživatel." }, { status: 401 });

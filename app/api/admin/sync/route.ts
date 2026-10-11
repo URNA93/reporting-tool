@@ -21,7 +21,7 @@ export async function POST(request: Request) {
   const byId = new Map((profiles ?? []).map((profile) => [profile.id, profile]));
   let synced = 0;
   let failed = 0;
-  for (const report of pending) {
+  for (const report of pending ?? []) {
     const owner = byId.get(report.user_id);
     if (!owner) { failed += 1; continue; }
     const result = await syncStoredReport(supabase, report.id, owner);

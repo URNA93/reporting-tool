@@ -281,7 +281,7 @@ export async function getDashboardData(user: SessionUser, filters: Filters = {})
         personName: item.client_name,
         description: item.description,
         amount: item.value_bu === null ? null : Number(item.value_bu),
-        unit: item.type === "consulting" ? "BU" : null,
+        unit: (item.type === "consulting" ? "BU" : null) as "BU" | null,
         dueDate: item.due_date,
         dueTime: item.due_time ? String(item.due_time).slice(0, 5) : null,
         status: item.status,
