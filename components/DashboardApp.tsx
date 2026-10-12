@@ -645,6 +645,39 @@ export default function DashboardApp({
         </div>
       )}
 
+      <section className="panel schedule-panel" aria-label="Nejbližší termíny">
+        <div className="panel-heading"><div><span>DALŠÍ KROKY</span><h2>Nejbližší termíny</h2></div><CalendarClock /></div>
+        {data.upcoming.length === 0 ? (
+          <div className="empty-state compact"><CalendarClock /><p>Žádné naplánované projekty ani termíny.</p></div>
+        ) : (
+          <div className="agenda">
+            {scheduleDays.map((day) => {
+              const label = dayLabel(day.date);
+              return (
+                <section className={`agenda-day${label.relative === "Dnes" ? " today" : ""}${day.items.length > 4 ? " wide" : ""}`} key={day.date} aria-label={`${label.relative ?? label.weekday} ${label.date}`}>
+                  <h3><span>{label.relative ?? label.weekday}</span><span>{label.date}</span></h3>
+                  <ul>
+                    {day.items.map((item) => (
+                      <li key={item.id}>
+                        <time dateTime={`${item.dueDate}${item.dueTime ? `T${item.dueTime}` : ""}`} className={item.dueTime ? undefined : "untimed"}>{item.dueTime ?? "—"}</time>
+                        <div><strong>{item.personName}</strong><p><span>{scheduleKind(item)}</span>{item.owner && <em>{item.owner}</em>}</p></div>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              );
+            })}
+          </div>
+        )}
+        {data.upcoming.length > SCHEDULE_PER_PAGE && (
+          <div className="table-pagination" aria-label="Stránkování termínů">
+            <Button variant="outline" size="sm" disabled={currentSchedulePage === 1} onClick={() => setSchedulePage((page) => Math.max(1, page - 1))}>Předchozí</Button>
+            <span>Strana {currentSchedulePage} z {schedulePageCount}</span>
+            <Button variant="outline" size="sm" disabled={currentSchedulePage === schedulePageCount} onClick={() => setSchedulePage((page) => Math.min(schedulePageCount, page + 1))}>Další</Button>
+          </div>
+        )}
+      </section>
+
       <section className="panel items-panel">
         <div className="panel-heading"><div><span>AKTUÁLNÍ PRÁCE</span><h2>Položky</h2></div><FolderKanban /></div>
         {data.items.length === 0 ? (
@@ -687,39 +720,6 @@ export default function DashboardApp({
             <Button variant="outline" size="sm" disabled={currentItemsPage === 1} onClick={() => setItemsPage((page) => Math.max(1, page - 1))}>Předchozí</Button>
             <span>Strana {currentItemsPage} z {itemsPageCount}</span>
             <Button variant="outline" size="sm" disabled={currentItemsPage === itemsPageCount} onClick={() => setItemsPage((page) => Math.min(itemsPageCount, page + 1))}>Další</Button>
-          </div>
-        )}
-      </section>
-
-      <section className="panel schedule-panel" aria-label="Nejbližší termíny">
-        <div className="panel-heading"><div><span>DALŠÍ KROKY</span><h2>Nejbližší termíny</h2></div><CalendarClock /></div>
-        {data.upcoming.length === 0 ? (
-          <div className="empty-state compact"><CalendarClock /><p>Žádné naplánované projekty ani termíny.</p></div>
-        ) : (
-          <div className="agenda">
-            {scheduleDays.map((day) => {
-              const label = dayLabel(day.date);
-              return (
-                <section className={`agenda-day${label.relative === "Dnes" ? " today" : ""}${day.items.length > 4 ? " wide" : ""}`} key={day.date} aria-label={`${label.relative ?? label.weekday} ${label.date}`}>
-                  <h3><span>{label.relative ?? label.weekday}</span><span>{label.date}</span></h3>
-                  <ul>
-                    {day.items.map((item) => (
-                      <li key={item.id}>
-                        <time dateTime={`${item.dueDate}${item.dueTime ? `T${item.dueTime}` : ""}`} className={item.dueTime ? undefined : "untimed"}>{item.dueTime ?? "—"}</time>
-                        <div><strong>{item.personName}</strong><p><span>{scheduleKind(item)}</span>{item.owner && <em>{item.owner}</em>}</p></div>
-                      </li>
-                    ))}
-                  </ul>
-                </section>
-              );
-            })}
-          </div>
-        )}
-        {data.upcoming.length > SCHEDULE_PER_PAGE && (
-          <div className="table-pagination" aria-label="Stránkování termínů">
-            <Button variant="outline" size="sm" disabled={currentSchedulePage === 1} onClick={() => setSchedulePage((page) => Math.max(1, page - 1))}>Předchozí</Button>
-            <span>Strana {currentSchedulePage} z {schedulePageCount}</span>
-            <Button variant="outline" size="sm" disabled={currentSchedulePage === schedulePageCount} onClick={() => setSchedulePage((page) => Math.min(schedulePageCount, page + 1))}>Další</Button>
           </div>
         )}
       </section>
