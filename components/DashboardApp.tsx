@@ -13,7 +13,7 @@ import {
   RefreshCw,
   Send,
   Trash2,
-  UsersRound,
+  ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { dayLabel, daysOverdue, nextDueSort, overdueLabel, sortByDue, type DueSort } from "@/lib/deadline";
@@ -226,6 +226,7 @@ export default function DashboardApp({
   const [movingStageId, setMovingStageId] = useState<string | null>(null);
   const [itemsPage, setItemsPage] = useState(1);
   const [schedulePage, setSchedulePage] = useState(1);
+  const [reportsOpenPanel, setReportsOpenPanel] = useState(false);
   const [dueSort, setDueSort] = useState<DueSort>("none");
   const [reportItemsEdit, setReportItemsEdit] = useState<{
     id: string;
@@ -725,8 +726,12 @@ export default function DashboardApp({
 
       <section className="dashboard-grid">
         <article className="panel reports-panel">
-          <div className="panel-heading"><div><span>POSLEDNÍ ODEVZDÁNÍ</span><h2>Reporty</h2></div><UsersRound /></div>
-          {data.reports.length === 0 ? (
+          <button type="button" className="panel-heading panel-toggle" aria-expanded={reportsOpenPanel} aria-controls="reports-panel-body" onClick={() => setReportsOpenPanel((open) => !open)}>
+            <div><span>POSLEDNÍ ODEVZDÁNÍ</span><h2>Reporty <small>{data.reports.length}</small></h2></div>
+            <ChevronDown className={reportsOpenPanel ? "open" : undefined} />
+          </button>
+          <div id="reports-panel-body" hidden={!reportsOpenPanel}>
+          {!reportsOpenPanel ? null : data.reports.length === 0 ? (
             <div className="empty-state"><FolderKanban /><h3>Zatím tu nic není</h3><p>První odeslaný report se ukáže tady.</p></div>
           ) : (
             <Table>
@@ -745,6 +750,7 @@ export default function DashboardApp({
               </TableBody>
             </Table>
           )}
+          </div>
         </article>
       </section>
 

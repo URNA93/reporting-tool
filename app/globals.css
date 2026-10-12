@@ -198,6 +198,12 @@ label [data-slot="select-trigger"] { width: 100%; }
 .panel-heading span { color: var(--orange); font-size: .66rem; font-weight: 900; letter-spacing: .13em; }
 .panel-heading h2 { margin: 3px 0 0; font-size: 1.55rem; letter-spacing: -.035em; }
 .panel-heading > svg { width: 24px; color: #aaa09a; }
+.panel-toggle { width: 100%; min-height: 58px; padding: 12px 24px; border: 0; border-bottom: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.panel-toggle[aria-expanded="true"] { border-bottom: 1px solid var(--line); }
+.panel-toggle h2 { margin-top: 1px; font-size: 1.2rem; }
+.panel-toggle h2 small { margin-left: 6px; color: var(--ink-soft); font-size: .8rem; font-weight: 700; }
+.panel-toggle > svg { transition: transform .15s; }
+.panel-toggle > svg.open { transform: rotate(180deg); }
 .panel-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
 .period-note { margin: -4px 0 2px; color: #8b837d; font-size: .82rem; line-height: 1.45; }
 .panel [data-slot="table-head"] { color: #8b837d; font-size: .69rem; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
@@ -334,6 +340,7 @@ label [data-slot="select-trigger"] { width: 100%; }
   .metric-card { min-height: 138px; }
   .panel-heading { padding-inline: 17px; }
   .panel-heading { align-items: flex-start; flex-direction: column; }
+  .panel-toggle { align-items: center; flex-direction: row; padding-inline: 17px; }
   .panel-actions { width: 100%; justify-content: stretch; }
   .panel-actions > * { flex: 1 1 auto; }
   .panel [data-slot="table-cell"] { padding-inline: 12px; }
