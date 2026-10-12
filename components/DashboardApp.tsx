@@ -76,6 +76,7 @@ type ReportItemDraft = {
 };
 
 const ITEMS_PER_PAGE = 20;
+const SCHEDULE_PER_PAGE = 12;
 
 type DashboardData = {
   metrics: {
@@ -224,6 +225,7 @@ export default function DashboardApp({
   const [editing, setEditing] = useState(false);
   const [movingStageId, setMovingStageId] = useState<string | null>(null);
   const [itemsPage, setItemsPage] = useState(1);
+  const [schedulePage, setSchedulePage] = useState(1);
   const [dueSort, setDueSort] = useState<DueSort>("none");
   const [reportItemsEdit, setReportItemsEdit] = useState<{
     id: string;
@@ -246,6 +248,12 @@ export default function DashboardApp({
   );
   const itemsPageCount = Math.max(1, Math.ceil(data.items.length / ITEMS_PER_PAGE));
   const currentItemsPage = Math.min(itemsPage, itemsPageCount);
+  const schedulePageCount = Math.max(1, Math.ceil(data.upcoming.length / SCHEDULE_PER_PAGE));
+  const currentSchedulePage = Math.min(schedulePage, schedulePageCount);
+  const scheduleItems = useMemo(
+    () => data.upcoming.slice((currentSchedulePage - 1) * SCHEDULE_PER_PAGE, currentSchedulePage * SCHEDULE_PER_PAGE),
+    [currentSchedulePage, data.upcoming],
+  );
   const sortedItems = useMemo(() => sortByDue(data.items, dueSort), [data.items, dueSort]);
   const paginatedItems = useMemo(
     () => sortedItems.slice((currentItemsPage - 1) * ITEMS_PER_PAGE, currentItemsPage * ITEMS_PER_PAGE),
@@ -328,6 +336,7 @@ export default function DashboardApp({
     }
     setData((await response.json()) as DashboardData);
     setItemsPage(1);
+    setSchedulePage(1);
     setDashboardError("");
   }
 
@@ -676,7 +685,7 @@ export default function DashboardApp({
         <div className="schedule-list">
           {data.upcoming.length === 0 ? (
             <div className="empty-state compact"><CalendarClock /><p>Žádné naplánované projekty ani termíny.</p></div>
-          ) : data.upcoming.map((item) => (
+          ) : scheduleItems.map((item) => (
             <div className="schedule-item" key={item.id}>
               <time>{item.dueDate ? formatDay(item.dueDate) : "—"}<small>{item.dueTime ?? ""}</small></time>
               <div><span>{(item.type === "fall" && item.processStage
@@ -687,6 +696,13 @@ export default function DashboardApp({
             </div>
           ))}
         </div>
+        {data.upcoming.length > SCHEDULE_PER_PAGE && (
+          <div className="table-pagination" aria-label="Stránkování termínů">
+            <Button variant="outline" size="sm" disabled={currentSchedulePage === 1} onClick={() => setSchedulePage((page) => Math.max(1, page - 1))}>Předchozí</Button>
+            <span>Strana {currentSchedulePage} z {schedulePageCount}</span>
+            <Button variant="outline" size="sm" disabled={currentSchedulePage === schedulePageCount} onClick={() => setSchedulePage((page) => Math.min(schedulePageCount, page + 1))}>Další</Button>
+          </div>
+        )}
       </section>
 
       <section className="dashboard-grid">

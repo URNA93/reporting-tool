@@ -64,3 +64,12 @@ test("the Termín filter offers 'S termínem' end to end and the table header so
   assert.match(dashboard, /sortByDue\(data\.items, dueSort\)/);
   assert.match(dashboard, /paginatedItems\.map/);
 });
+
+test("Nejbližší termíny are paged by 12 in the UI, not cut off by the server", async () => {
+  const dashboard = await read("components/DashboardApp.tsx");
+  const data = await read("lib/data.ts");
+  assert.match(dashboard, /const SCHEDULE_PER_PAGE = 12/);
+  assert.match(dashboard, /scheduleItems\.map/);
+  assert.match(dashboard, /aria-label="Stránkování termínů"/);
+  assert.doesNotMatch(data, /upcomingAll\.slice\(/);
+});

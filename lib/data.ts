@@ -220,7 +220,7 @@ export async function getDashboardData(user: SessionUser, filters: Filters = {})
       })),
   ]
     .sort((left, right) => `${left.dueDate ?? ""}T${left.dueTime ?? "00:00"}`.localeCompare(`${right.dueDate ?? ""}T${right.dueTime ?? "00:00"}`));
-  const upcoming = upcomingAll.slice(0, 12);
+  const upcoming = upcomingAll;
 
   // Počty musí popisovat tytéž položky, které filtr "Bez termínu" a "Po termínu"
   // zobrazí v tabulce: aktivní projekty i domluvené analýzy, poradenství a rozhovory.

@@ -91,12 +91,13 @@ function harness({ projects = [], appointments = [] }) {
 
 const ids = (data) => data.items.map((item) => item.id).sort();
 
-test("Blízké termíny shows the real number of upcoming items, not the 12-row list cap", async () => {
+test("Blízké termíny counts every upcoming item and the list carries all of them for the UI to page through", async () => {
   const projects = Array.from({ length: 15 }, (_, index) =>
     project(`p${index}`, { due_date: `2099-01-${String(index + 1).padStart(2, "0")}` }));
   const data = await harness({ projects })();
 
-  assert.equal(data.upcoming.length, 12, "the list itself stays capped at 12 rows");
+  assert.equal(data.upcoming.length, 15);
+  assert.deepEqual(data.upcoming.map((item) => item.id), Array.from({ length: 15 }, (_, index) => `p${index}`), "sorted by date");
   assert.equal(data.metrics.upcomingMeetings, 15);
 });
 

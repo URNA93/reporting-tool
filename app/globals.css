@@ -234,6 +234,7 @@ label [data-slot="select-trigger"] { width: 100%; }
 .schedule-panel .panel-heading { min-height: 58px; padding: 12px 24px; }
 .schedule-panel .panel-heading h2 { margin-top: 1px; font-size: 1.2rem; }
 .schedule-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); margin-bottom: -1px; }
+.schedule-panel .table-pagination { padding-block: 10px; }
 .schedule-list > .empty-state.compact { grid-column: 1 / -1; min-height: 96px; padding: 12px; }
 .schedule-item { min-width: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 12px; padding: 10px 24px; border-bottom: 1px solid var(--line); }
 .schedule-item time { min-width: 58px; display: grid; justify-items: center; padding: 6px 8px; border-radius: 10px; background: var(--orange-pale); color: var(--orange-deep); font-size: .74rem; font-weight: 900; line-height: 1.25; text-transform: uppercase; white-space: nowrap; }
