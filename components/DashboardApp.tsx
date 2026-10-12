@@ -671,6 +671,24 @@ export default function DashboardApp({
         )}
       </section>
 
+      <section className="panel schedule-panel" aria-label="Nejbližší termíny">
+        <div className="panel-heading"><div><span>DALŠÍ KROKY</span><h2>Nejbližší termíny</h2></div><CalendarClock /></div>
+        <div className="schedule-list">
+          {data.upcoming.length === 0 ? (
+            <div className="empty-state compact"><CalendarClock /><p>Žádné naplánované projekty ani termíny.</p></div>
+          ) : data.upcoming.map((item) => (
+            <div className="schedule-item" key={item.id}>
+              <time>{item.dueDate ? formatDay(item.dueDate) : "—"}<small>{item.dueTime ?? ""}</small></time>
+              <div><span>{(item.type === "fall" && item.processStage
+                ? `${typeSingularLabels.fall} · ${processStageLabels[item.processStage]}`
+                : item.processStage
+                  ? processStageLabels[item.processStage]
+                  : typeSingularLabels[item.type]).toUpperCase()}</span><strong>{item.personName}</strong><p>{item.owner}</p></div>
+            </div>
+          ))}
+        </div>
+      </section>
+
       <section className="dashboard-grid">
         <article className="panel reports-panel">
           <div className="panel-heading"><div><span>POSLEDNÍ ODEVZDÁNÍ</span><h2>Reporty</h2></div><UsersRound /></div>
@@ -693,24 +711,6 @@ export default function DashboardApp({
               </TableBody>
             </Table>
           )}
-        </article>
-
-        <article className="panel schedule-panel">
-          <div className="panel-heading"><div><span>DALŠÍ KROKY</span><h2>Nejbližší termíny</h2></div><CalendarClock /></div>
-          <div className="schedule-list">
-            {data.upcoming.length === 0 ? (
-              <div className="empty-state compact"><CalendarClock /><p>Žádné naplánované projekty ani termíny.</p></div>
-            ) : data.upcoming.map((item) => (
-              <div className="schedule-item" key={item.id}>
-                <time>{item.dueDate ? formatDay(item.dueDate) : "—"}<small>{item.dueTime ?? ""}</small></time>
-                <div><span>{(item.type === "fall" && item.processStage
-                  ? `${typeSingularLabels.fall} · ${processStageLabels[item.processStage]}`
-                  : item.processStage
-                    ? processStageLabels[item.processStage]
-                    : typeSingularLabels[item.type]).toUpperCase()}</span><strong>{item.personName}</strong><p>{item.owner}</p></div>
-              </div>
-            ))}
-          </div>
         </article>
       </section>
 
