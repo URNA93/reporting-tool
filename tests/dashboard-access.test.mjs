@@ -83,6 +83,9 @@ function fixture(user, { empty = false, withAppointments = false, appointmentTyp
               case "eq": return String(row[column]) === value;
               case "neq": return String(row[column]) !== value;
               case "is": return value === "null" && row[column] === null;
+              case "not":
+                if (value !== "is.null") throw new Error(`Unexpected filter: ${filter}`);
+                return row[column] !== null;
               case "gte": return row[column] >= value;
               case "lte": return row[column] <= value;
               case "lt": return row[column] < value;

@@ -114,5 +114,5 @@ export const dashboardFilterSchema = z.object({
   phase: phase.optional(),
   processStage: z.enum(["project", "analysis", "consulting", "intro"]).optional(),
   carryover: z.enum(["yes", "no"]).optional(),
-  alert: z.enum(["no_due", "overdue"]).optional(),
+  alert: z.enum(["no_due", "overdue", "with_due"]).optional(),
 });

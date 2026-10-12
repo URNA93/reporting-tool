@@ -205,6 +205,11 @@ label [data-slot="select-trigger"] { width: 100%; }
 .panel [data-slot="table-cell"] strong, .panel [data-slot="table-cell"] small { display: block; }
 .panel [data-slot="table-cell"] small { margin-top: 3px; color: #9b928c; font-size: .72rem; }
 .items-panel { margin-top: 22px; }
+.sort-button { display: inline-flex; align-items: center; gap: 5px; padding: 0; border: 0; background: none; color: inherit; font: inherit; letter-spacing: inherit; text-transform: inherit; cursor: pointer; }
+.sort-button svg { width: 13px; height: 13px; opacity: .55; }
+.sort-button:hover, .sort-button:focus-visible { color: var(--orange-deep); }
+.sort-button:hover svg, [aria-sort="ascending"] .sort-button svg, [aria-sort="descending"] .sort-button svg { opacity: 1; color: var(--orange); }
+.sort-button:focus-visible { outline: 2px solid rgba(244,81,30,.38); outline-offset: 3px; border-radius: 4px; }
 .items-table { min-width: 1120px; table-layout: fixed; }
 .items-table-type { width: 9%; }
 .items-table-client { width: 12%; }

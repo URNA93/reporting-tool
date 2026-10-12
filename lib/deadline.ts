@@ -48,3 +48,29 @@ export function overdueLabel(days: number) {
   if (days >= 2 && days <= 4) return `Po termínu · ${days} dny`;
   return `Po termínu · ${days} dní`;
 }
+
+export type DueSort = "none" | "asc" | "desc";
+
+/**
+ * Seřadí položky podle termínu (datum, při shodě čas). Položky bez termínu jsou
+ * vždy na konci, ať se řadí vzestupně nebo sestupně. Řazení je stabilní, takže
+ * položky se stejným termínem zůstanou ve výchozím pořadí.
+ */
+export function sortByDue<T extends { dueDate: string | null; dueTime: string | null }>(
+  items: T[],
+  direction: DueSort,
+): T[] {
+  if (direction === "none") return items;
+  const sign = direction === "asc" ? 1 : -1;
+  const key = (item: T) => `${item.dueDate}T${item.dueTime ?? "00:00"}`;
+  return [...items].sort((left, right) => {
+    if (!left.dueDate && !right.dueDate) return 0;
+    if (!left.dueDate) return 1;
+    if (!right.dueDate) return -1;
+    return key(left).localeCompare(key(right)) * sign;
+  });
+}
+
+export function nextDueSort(current: DueSort): DueSort {
+  return current === "none" ? "asc" : current === "asc" ? "desc" : "none";
+}

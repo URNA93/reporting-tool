@@ -54,3 +54,13 @@ test("the dashboard is served only by the no-store /api/dashboard endpoint", asy
   const reports = await read("app/api/reports/route.ts");
   assert.doesNotMatch(reports, /export async function GET/);
 });
+
+test("the Termín filter offers 'S termínem' end to end and the table header sorts by due date", async () => {
+  const validation = await read("lib/validation.ts");
+  const dashboard = await read("components/DashboardApp.tsx");
+  assert.match(validation, /alert: z\.enum\(\["no_due", "overdue", "with_due"\]\)/);
+  assert.match(dashboard, /<SelectItem value="with_due">S termínem<\/SelectItem>/);
+  assert.match(dashboard, /aria-sort=/);
+  assert.match(dashboard, /sortByDue\(data\.items, dueSort\)/);
+  assert.match(dashboard, /paginatedItems\.map/);
+});

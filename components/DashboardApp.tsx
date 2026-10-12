@@ -2,6 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
   CalendarClock,
   CircleGauge,
   FolderKanban,
@@ -13,7 +16,7 @@ import {
   UsersRound,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { daysOverdue, overdueLabel } from "@/lib/deadline";
+import { daysOverdue, nextDueSort, overdueLabel, sortByDue, type DueSort } from "@/lib/deadline";
 import {
   Combobox,
   ComboboxContent,
@@ -221,6 +224,7 @@ export default function DashboardApp({
   const [editing, setEditing] = useState(false);
   const [movingStageId, setMovingStageId] = useState<string | null>(null);
   const [itemsPage, setItemsPage] = useState(1);
+  const [dueSort, setDueSort] = useState<DueSort>("none");
   const [reportItemsEdit, setReportItemsEdit] = useState<{
     id: string;
     userName: string;
@@ -242,9 +246,10 @@ export default function DashboardApp({
   );
   const itemsPageCount = Math.max(1, Math.ceil(data.items.length / ITEMS_PER_PAGE));
   const currentItemsPage = Math.min(itemsPage, itemsPageCount);
+  const sortedItems = useMemo(() => sortByDue(data.items, dueSort), [data.items, dueSort]);
   const paginatedItems = useMemo(
-    () => data.items.slice((currentItemsPage - 1) * ITEMS_PER_PAGE, currentItemsPage * ITEMS_PER_PAGE),
-    [currentItemsPage, data.items],
+    () => sortedItems.slice((currentItemsPage - 1) * ITEMS_PER_PAGE, currentItemsPage * ITEMS_PER_PAGE),
+    [currentItemsPage, sortedItems],
   );
 
   useEffect(() => {
@@ -339,6 +344,7 @@ export default function DashboardApp({
     setStateFilter("all");
     setProcessStageFilter("all");
     setAlertFilter("all");
+    setDueSort("none");
     setItemsPage(1);
     await refresh(false);
   }
@@ -595,7 +601,7 @@ export default function DashboardApp({
             <Select value={processStageFilter} onValueChange={(value) => { setProcessStageFilter(value); setItemsPage(1); }}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">Všechny procesy</SelectItem>{(Object.keys(processFilterLabels) as ProcessFilter[]).map((stage) => <SelectItem key={stage} value={stage}>{processFilterLabels[stage]}</SelectItem>)}</SelectContent></Select>
           </label>
           <label>Termín
-            <Select value={alertFilter} onValueChange={(value) => { setAlertFilter(value); setItemsPage(1); }}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">Všechny termíny</SelectItem><SelectItem value="no_due">Bez termínu</SelectItem><SelectItem value="overdue">Po termínu</SelectItem></SelectContent></Select>
+            <Select value={alertFilter} onValueChange={(value) => { setAlertFilter(value); setItemsPage(1); }}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">Všechny termíny</SelectItem><SelectItem value="with_due">S termínem</SelectItem><SelectItem value="no_due">Bez termínu</SelectItem><SelectItem value="overdue">Po termínu</SelectItem></SelectContent></Select>
           </label>
           <Button className="filter-apply" variant="outline" onClick={() => refresh()}><RefreshCw /> Použít</Button>
           <Button variant="ghost" onClick={clearFilters}>Celkový přehled</Button>
@@ -635,7 +641,11 @@ export default function DashboardApp({
               <col className="items-table-owner" />
               <col className="items-table-actions" />
             </colgroup>
-            <TableHeader><TableRow><TableHead>Typ</TableHead><TableHead>Člověk / klient</TableHead><TableHead>Co se řeší</TableHead><TableHead>Kolik</TableHead><TableHead>Termín</TableHead><TableHead>Stav / proces</TableHead><TableHead>Reportér</TableHead><TableHead></TableHead></TableRow></TableHeader>
+            <TableHeader><TableRow><TableHead>Typ</TableHead><TableHead>Člověk / klient</TableHead><TableHead>Co se řeší</TableHead><TableHead>Kolik</TableHead><TableHead aria-sort={dueSort === "asc" ? "ascending" : dueSort === "desc" ? "descending" : "none"}>
+                <button type="button" className="sort-button" onClick={() => { setDueSort(nextDueSort(dueSort)); setItemsPage(1); }} aria-label="Řadit podle termínu">
+                  Termín {dueSort === "asc" ? <ArrowUp /> : dueSort === "desc" ? <ArrowDown /> : <ArrowUpDown />}
+                </button>
+              </TableHead><TableHead>Stav / proces</TableHead><TableHead>Reportér</TableHead><TableHead></TableHead></TableRow></TableHeader>
             <TableBody>
               {paginatedItems.map((item) => (
                 <TableRow key={item.id} className={daysOverdue(item) !== null ? "row-overdue" : undefined}>

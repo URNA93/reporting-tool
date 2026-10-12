@@ -65,6 +65,9 @@ function harness({ projects = [], appointments = [] }) {
               case "eq": return String(row[column]) === value;
               case "neq": return String(row[column]) !== value;
               case "is": return value === "null" && row[column] === null;
+              case "not":
+                if (value !== "is.null") throw new Error(`Unexpected filter: ${filter}`);
+                return row[column] !== null;
               case "gte": return row[column] >= value;
               case "lte": return row[column] <= value;
               case "lt": return row[column] < value;
@@ -155,7 +158,7 @@ test("for every filter combination the cards and banner describe exactly the ite
   for (const filters of [
     undefined, { state: "active" }, { state: "completed" }, { state: "cancelled" },
     { processStage: "project" }, { processStage: "analysis" }, { processStage: "consulting" }, { processStage: "intro" },
-    { alert: "overdue" }, { alert: "no_due" }, { from: "2000-01-01", to: "2050-01-01" }, { from: "2099-01-01" },
+    { alert: "overdue" }, { alert: "no_due" }, { alert: "with_due" }, { from: "2000-01-01", to: "2050-01-01" }, { from: "2099-01-01" },
     { periodStart: "2026-09-02", periodEnd: "2026-10-06" }, { alert: "overdue", processStage: "consulting" },
   ]) {
     const data = await load(filters);
@@ -176,5 +179,27 @@ test("for every filter combination the cards and banner describe exactly the ite
     );
     if (filters?.alert === "overdue") assert.ok(data.items.every((item) => deadline.isOverdue(item)), `overdue rows ${label}`);
     if (filters?.alert === "no_due") assert.ok(data.items.every((item) => !item.dueDate), `no-due rows ${label}`);
+    if (filters?.alert === "with_due") assert.ok(data.items.every((item) => item.dueDate && (item.status === "active" || item.status === "scheduled")), `with-due rows ${label}`);
   }
+});
+
+test("'S termínem' and 'Bez termínu' split the open items exactly, with no overlap and no gap", async () => {
+  const load = harness({
+    projects: [
+      project("dated", { due_date: "2099-01-01" }), project("undated"),
+      project("done-dated", { state: "completed", due_date: "2099-01-02" }),
+    ],
+    appointments: [
+      appointment("meeting-dated", { due_date: "2099-02-01" }), appointment("meeting-undated"),
+      appointment("meeting-done", { due_date: "2099-02-02", status: "done" }),
+    ],
+  });
+
+  const withDue = ids(await load({ alert: "with_due" }));
+  const noDue = ids(await load({ alert: "no_due" }));
+  const allOpen = ids(await load());
+
+  assert.deepEqual(withDue, ["dated", "meeting-dated"]);
+  assert.deepEqual(noDue, ["meeting-undated", "undated"]);
+  assert.deepEqual([...withDue, ...noDue].sort(), allOpen);
 });

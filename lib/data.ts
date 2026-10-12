@@ -12,7 +12,7 @@ type Filters = {
   phase?: "new" | "contact" | "analysis" | "offer" | "signature" | "processing" | null;
   processStage?: "project" | "analysis" | "consulting" | "intro" | null;
   carryover?: "yes" | "no" | null;
-  alert?: "no_due" | "overdue" | null;
+  alert?: "no_due" | "overdue" | "with_due" | null;
 };
 
 export async function getDashboardData(user: SessionUser, filters: Filters = {}) {
@@ -111,6 +111,10 @@ export async function getDashboardData(user: SessionUser, filters: Filters = {})
   if (filters.alert === "no_due") {
     projectsQuery = projectsQuery.is("due_date", null).eq("state", "active");
     appointmentsQuery = appointmentsQuery.is("due_date", null).eq("status", "scheduled");
+  }
+  if (filters.alert === "with_due") {
+    projectsQuery = projectsQuery.not("due_date", "is", null).eq("state", "active");
+    appointmentsQuery = appointmentsQuery.not("due_date", "is", null).eq("status", "scheduled");
   }
   if (filters.alert === "overdue") {
     projectsQuery = projectsQuery.lt("due_date", currentDate).eq("state", "active");
