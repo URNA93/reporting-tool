@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { daysOverdue, isOverdue, nextDueSort, overdueLabel, sortByDue, todayInPrague } from "../lib/deadline.ts";
+import { dayLabel, daysOverdue, isOverdue, nextDueSort, overdueLabel, sortByDue, todayInPrague } from "../lib/deadline.ts";
 
 const NOW = new Date("2026-10-11T10:00:00Z"); // 11. 10. 2026 v Praze
 
@@ -52,4 +52,12 @@ test("clicking the Termín header cycles ascending, descending, original", () =>
   assert.equal(nextDueSort("none"), "asc");
   assert.equal(nextDueSort("asc"), "desc");
   assert.equal(nextDueSort("desc"), "none");
+});
+
+test("day labels say Dnes and Zítra in Prague time and otherwise name the weekday", () => {
+  assert.deepEqual(dayLabel("2026-10-11", NOW), { relative: "Dnes", weekday: "neděle", date: "11. 10." });
+  assert.equal(dayLabel("2026-10-12", NOW).relative, "Zítra");
+  assert.deepEqual(dayLabel("2026-10-16", NOW), { relative: null, weekday: "pátek", date: "16. 10." });
+  // 23:30 UTC on the 10th is already the 11th in Prague, so the 12th is "Zítra"
+  assert.equal(dayLabel("2026-10-12", new Date("2026-10-10T23:30:00Z")).relative, "Zítra");
 });

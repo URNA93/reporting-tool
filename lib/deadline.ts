@@ -74,3 +74,14 @@ export function sortByDue<T extends { dueDate: string | null; dueTime: string | 
 export function nextDueSort(current: DueSort): DueSort {
   return current === "none" ? "asc" : current === "asc" ? "desc" : "none";
 }
+
+/** Popisek dne pro agendu: "Dnes" a "Zítra", jinak den v týdnu; datum je vždy zvlášť. */
+export function dayLabel(isoDate: string, reference = new Date()) {
+  const diff = dayNumber(isoDate) - dayNumber(todayInPrague(reference));
+  const noon = new Date(`${isoDate}T12:00:00Z`);
+  return {
+    relative: diff === 0 ? "Dnes" : diff === 1 ? "Zítra" : null,
+    weekday: new Intl.DateTimeFormat("cs-CZ", { weekday: "long", timeZone: "UTC" }).format(noon),
+    date: new Intl.DateTimeFormat("cs-CZ", { day: "numeric", month: "numeric", timeZone: "UTC" }).format(noon),
+  };
+}

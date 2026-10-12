@@ -16,7 +16,7 @@ import {
   UsersRound,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { daysOverdue, nextDueSort, overdueLabel, sortByDue, type DueSort } from "@/lib/deadline";
+import { dayLabel, daysOverdue, nextDueSort, overdueLabel, sortByDue, type DueSort } from "@/lib/deadline";
 import {
   Combobox,
   ComboboxContent,
@@ -254,6 +254,16 @@ export default function DashboardApp({
     () => data.upcoming.slice((currentSchedulePage - 1) * SCHEDULE_PER_PAGE, currentSchedulePage * SCHEDULE_PER_PAGE),
     [currentSchedulePage, data.upcoming],
   );
+  const scheduleDays = useMemo(() => {
+    const days: Array<{ date: string; items: typeof scheduleItems }> = [];
+    for (const item of scheduleItems) {
+      const date = item.dueDate ?? "";
+      const last = days.at(-1);
+      if (last && last.date === date) last.items.push(item);
+      else days.push({ date, items: [item] });
+    }
+    return days;
+  }, [scheduleItems]);
   const sortedItems = useMemo(() => sortByDue(data.items, dueSort), [data.items, dueSort]);
   const paginatedItems = useMemo(
     () => sortedItems.slice((currentItemsPage - 1) * ITEMS_PER_PAGE, currentItemsPage * ITEMS_PER_PAGE),
@@ -682,20 +692,28 @@ export default function DashboardApp({
 
       <section className="panel schedule-panel" aria-label="Nejbližší termíny">
         <div className="panel-heading"><div><span>DALŠÍ KROKY</span><h2>Nejbližší termíny</h2></div><CalendarClock /></div>
-        <div className="schedule-list">
-          {data.upcoming.length === 0 ? (
-            <div className="empty-state compact"><CalendarClock /><p>Žádné naplánované projekty ani termíny.</p></div>
-          ) : scheduleItems.map((item) => (
-            <div className="schedule-item" key={item.id}>
-              <time>{item.dueDate ? formatDay(item.dueDate) : "—"}<small>{item.dueTime ?? ""}</small></time>
-              <div><span>{(item.type === "fall" && item.processStage
-                ? `${typeSingularLabels.fall} · ${processStageLabels[item.processStage]}`
-                : item.processStage
-                  ? processStageLabels[item.processStage]
-                  : typeSingularLabels[item.type]).toUpperCase()}</span><strong>{item.personName}</strong><p>{item.owner}</p></div>
-            </div>
-          ))}
-        </div>
+        {data.upcoming.length === 0 ? (
+          <div className="empty-state compact"><CalendarClock /><p>Žádné naplánované projekty ani termíny.</p></div>
+        ) : (
+          <div className="agenda">
+            {scheduleDays.map((day) => {
+              const label = dayLabel(day.date);
+              return (
+                <section className={`agenda-day${label.relative === "Dnes" ? " today" : ""}`} key={day.date} aria-label={`${label.relative ?? label.weekday} ${label.date}`}>
+                  <h3><span>{label.relative ?? label.weekday}</span><span>{label.date}</span></h3>
+                  <ul>
+                    {day.items.map((item) => (
+                      <li key={item.id}>
+                        <time dateTime={`${item.dueDate}${item.dueTime ? `T${item.dueTime}` : ""}`} className={item.dueTime ? undefined : "untimed"}>{item.dueTime ?? "—"}</time>
+                        <div><strong>{item.personName}</strong><p><span>{scheduleKind(item)}</span>{item.owner && <em>{item.owner}</em>}</p></div>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              );
+            })}
+          </div>
+        )}
         {data.upcoming.length > SCHEDULE_PER_PAGE && (
           <div className="table-pagination" aria-label="Stránkování termínů">
             <Button variant="outline" size="sm" disabled={currentSchedulePage === 1} onClick={() => setSchedulePage((page) => Math.max(1, page - 1))}>Předchozí</Button>
@@ -877,8 +895,9 @@ function ReportItemCard({
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("cs-CZ").format(new Date(`${value}T12:00:00`));
 }
-function formatDay(value: string) {
-  return new Intl.DateTimeFormat("cs-CZ", { day: "numeric", month: "short" }).format(new Date(`${value}T12:00:00`));
+function scheduleKind(item: DashboardData["upcoming"][number]) {
+  if (item.type === "fall" && item.processStage) return `${typeSingularLabels.fall} · ${processStageLabels[item.processStage]}`;
+  return item.processStage ? processStageLabels[item.processStage] : typeSingularLabels[item.type];
 }
 function formatVolumes(volumes: Record<string, number>) {
   const entries = Object.entries(volumes);

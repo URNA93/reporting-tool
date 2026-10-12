@@ -69,7 +69,8 @@ test("Nejbližší termíny are paged by 12 in the UI, not cut off by the server
   const dashboard = await read("components/DashboardApp.tsx");
   const data = await read("lib/data.ts");
   assert.match(dashboard, /const SCHEDULE_PER_PAGE = 12/);
-  assert.match(dashboard, /scheduleItems\.map/);
+  assert.match(dashboard, /scheduleDays\.map/);
+  assert.match(dashboard, /className="agenda"/);
   assert.match(dashboard, /aria-label="Stránkování termínů"/);
   assert.doesNotMatch(data, /upcomingAll\.slice\(/);
 });
