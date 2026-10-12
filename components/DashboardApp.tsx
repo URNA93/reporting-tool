@@ -699,7 +699,7 @@ export default function DashboardApp({
             {scheduleDays.map((day) => {
               const label = dayLabel(day.date);
               return (
-                <section className={`agenda-day${label.relative === "Dnes" ? " today" : ""}`} key={day.date} aria-label={`${label.relative ?? label.weekday} ${label.date}`}>
+                <section className={`agenda-day${label.relative === "Dnes" ? " today" : ""}${day.items.length > 4 ? " wide" : ""}`} key={day.date} aria-label={`${label.relative ?? label.weekday} ${label.date}`}>
                   <h3><span>{label.relative ?? label.weekday}</span><span>{label.date}</span></h3>
                   <ul>
                     {day.items.map((item) => (

@@ -234,10 +234,13 @@ label [data-slot="select-trigger"] { width: 100%; }
 .schedule-panel .panel-heading { min-height: 58px; padding: 12px 24px; }
 .schedule-panel .panel-heading h2 { margin-top: 1px; font-size: 1.2rem; }
 .schedule-panel .empty-state.compact { min-height: 96px; padding: 12px; }
-.agenda { columns: 4 250px; column-gap: 4px; padding: 4px 12px 8px; }
+.agenda { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 0 4px; align-items: start; padding: 4px 12px 8px; }
 .schedule-panel .table-pagination { padding-block: 8px; }
 .schedule-panel .table-pagination button { height: 32px; min-height: 32px; }
-.agenda-day { break-inside: avoid; padding: 10px 12px 2px; }
+.agenda-day { min-width: 0; padding: 10px 12px 2px; }
+.agenda-day.wide { grid-column: 1 / -1; }
+.agenda-day.wide ul { columns: 250px; column-gap: 24px; }
+.agenda-day.wide li { break-inside: avoid; }
 .agenda-day h3 { display: flex; align-items: baseline; gap: 8px; margin: 0 0 1px; padding-bottom: 6px; border-bottom: 1px solid var(--line); color: var(--ink-soft); font-size: .8rem; font-weight: 700; }
 .agenda-day h3 span:first-child { color: var(--ink); font-weight: 800; text-transform: capitalize; }
 .agenda-day h3 span:last-child { margin-left: auto; font-variant-numeric: tabular-nums; }
