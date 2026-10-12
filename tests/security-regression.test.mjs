@@ -75,7 +75,7 @@ test("dashboard uses one filtered source for date ranges and paginates only the 
   assert.match(data, /projectsQuery = projectsQuery\.gte\("due_date", filters\.from\)/);
   assert.match(data, /appointmentsQuery = appointmentsQuery\.lte\("due_date", filters\.to\)/);
   assert.match(data, /const projectVolumes = projects\.reduce/);
-  assert.match(dashboard, /const ITEMS_PER_PAGE = 20/);
+  assert.match(dashboard, /const ITEMS_PER_PAGE = 10/);
   assert.match(dashboard, /paginatedItems\.map/);
   assert.match(dashboard, /Strana \{currentItemsPage\} z \{itemsPageCount\}/);
   assert.match(dashboard, /activateNoDueFilter/);

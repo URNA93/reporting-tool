@@ -75,7 +75,7 @@ type ReportItemDraft = {
   ownerId: string | null;
 };
 
-const ITEMS_PER_PAGE = 20;
+const ITEMS_PER_PAGE = 10;
 const SCHEDULE_PER_PAGE = 12;
 
 type DashboardData = {
