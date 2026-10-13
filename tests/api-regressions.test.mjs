@@ -74,3 +74,10 @@ test("Nejbližší termíny are paged by 12 in the UI, not cut off by the server
   assert.match(dashboard, /aria-label="Stránkování termínů"/);
   assert.doesNotMatch(data, /upcomingAll\.slice\(/);
 });
+
+test("přenesená položka (typ fall) jde upravit stejně jako projekt: pole BU a jednotka BU při uložení", async () => {
+  const dashboard = await readFile(new URL("../components/DashboardApp.tsx", import.meta.url), "utf8");
+  assert.match(dashboard, /const projectLike = item\.type === "project" \|\| item\.type === "fall"/);
+  assert.match(dashboard, /\(projectLike \|\| item\.type === "consulting"\) && <><label>/);
+  assert.match(dashboard, /unit: editDraft\.type === "project" \|\| editDraft\.type === "fall" \|\| editDraft\.type === "consulting" \? "BU" : null/);
+});

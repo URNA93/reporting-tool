@@ -401,7 +401,7 @@ export default function DashboardApp({
           personName: item.personName,
           description: item.description,
           amount: item.amount,
-          unit: item.type === "project" || item.type === "consulting" ? "BU" : null,
+          unit: item.type === "project" || item.type === "fall" || item.type === "consulting" ? "BU" : null,
           dueDate: item.dueDate,
           dueTime: item.dueTime,
           status: item.status,
@@ -439,7 +439,7 @@ export default function DashboardApp({
       personName: item.personName,
       description: item.description,
       amount: item.amount,
-      unit: item.type === "project" || item.type === "consulting" ? "BU" : null,
+      unit: item.type === "project" || item.type === "fall" || item.type === "consulting" ? "BU" : null,
       dueDate: item.dueDate,
       dueTime: item.dueTime,
       status: item.status,
@@ -463,7 +463,7 @@ export default function DashboardApp({
         personName: editDraft.personName,
         description: editDraft.description,
         amount: editDraft.amount,
-        unit: editDraft.type === "project" || editDraft.type === "consulting" ? "BU" : null,
+        unit: editDraft.type === "project" || editDraft.type === "fall" || editDraft.type === "consulting" ? "BU" : null,
         dueDate: editDraft.dueDate,
         dueTime: editDraft.dueTime,
         status: editDraft.status,
@@ -869,7 +869,8 @@ function ReportItemCard({
 }) {
   const intro = item.type === "intro";
   const appointment = item.type === "analysis" || item.type === "consulting" || intro;
-  const projectConsulting = item.type === "project" && item.processStage === "consulting";
+  const projectLike = item.type === "project" || item.type === "fall";
+  const projectConsulting = projectLike && item.processStage === "consulting";
   const statusOptions: ItemStatus[] = appointment
     ? ["scheduled", "done", "cancelled"]
     : ["active", "completed", "cancelled"];
@@ -887,7 +888,7 @@ function ReportItemCard({
           </Select>
         </label>}
         {!intro && <label>{appointment ? "Téma" : "Projekt / popis"}<Input value={item.description} onChange={(event) => onChange({ description: event.target.value })} placeholder={appointment ? "Čeho se schůzka týká" : "Co je v řešení"} /></label>}
-        {(item.type === "project" || item.type === "consulting") && <><label>{item.type === "consulting" ? "Objem poradenství" : "Objem projektu"}<Input type="number" min="0" step="0.01" value={item.amount ?? ""} onChange={(event) => onChange({ amount: event.target.value === "" ? null : Number(event.target.value) })} /></label><label>Jednotka<Input value="BU" readOnly aria-readonly="true" /></label></>}
+        {(projectLike || item.type === "consulting") && <><label>{item.type === "consulting" ? "Objem poradenství" : "Objem projektu"}<Input type="number" min="0" step="0.01" value={item.amount ?? ""} onChange={(event) => onChange({ amount: event.target.value === "" ? null : Number(event.target.value) })} /></label><label>Jednotka<Input value="BU" readOnly aria-readonly="true" /></label></>}
         <label>Termín<Input type="date" value={item.dueDate ?? ""} onChange={(event) => onChange({ dueDate: event.target.value || null })} /></label>
         {(appointment || projectConsulting) && <label>Čas<Input type="time" value={item.dueTime ?? ""} onChange={(event) => onChange({ dueTime: event.target.value || null })} /></label>}
         {!appointment && <label>Fáze<Select value={item.phase ?? "new"} onValueChange={(value) => onChange({ phase: value as ProjectPhase })}><SelectTrigger><SelectValue>{phaseLabels[item.phase ?? "new"]}</SelectValue></SelectTrigger><SelectContent>{(Object.keys(phaseLabels) as ProjectPhase[]).map((phase) => <SelectItem key={phase} value={phase}>{phaseLabels[phase]}</SelectItem>)}</SelectContent></Select></label>}
