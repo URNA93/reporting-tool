@@ -164,6 +164,8 @@ const phaseLabels: Record<ProjectPhase, string> = {
   signature: "Podpis",
   processing: "Zpracování",
 };
+// Druhý pád pro tlačítka "Přesunout do …".
+const stageTargetLabels: Record<ProjectProcessStage, string> = { project: "projektu", analysis: "analýzy", consulting: "poradenství" };
 const processStageLabels: Record<ProjectProcessStage, string> = {
   project: "Projekt",
   analysis: "Analýza",
@@ -830,7 +832,7 @@ export default function DashboardApp({
                 <section className="process-stage-actions" aria-label="Procesní fáze projektu">
                   <div><span>Procesní fáze</span><strong>{processStageLabels[editDraft.processStage]}</strong><small>Posun procesu je nezávislý na poli Fáze níže.</small></div>
                   {editDraft.status === "active" ? <div className="row-actions">
-                    {user.role === "admin" ? (Object.keys(processStageLabels) as ProjectProcessStage[]).filter((stage) => stage !== editDraft.processStage).map((stage) => <Button key={stage} variant={stage === "consulting" ? "outline" : "ghost"} size="sm" disabled={movingStageId === editDraft.localId} onClick={() => moveProcessStage(editDraft.localId, stage)}>Přesunout do {processStageLabels[stage].toLowerCase()}</Button>) : <>
+                    {user.role === "admin" ? (Object.keys(processStageLabels) as ProjectProcessStage[]).filter((stage) => stage !== editDraft.processStage).map((stage) => <Button key={stage} variant={stage === "consulting" ? "outline" : "ghost"} size="sm" disabled={movingStageId === editDraft.localId} onClick={() => moveProcessStage(editDraft.localId, stage)}>Přesunout do {stageTargetLabels[stage]}</Button>) : <>
                       {editDraft.processStage === "project" && <Button variant="outline" size="sm" disabled={movingStageId === editDraft.localId} onClick={() => moveProcessStage(editDraft.localId, "analysis")}>Přesunout do analýzy</Button>}
                       {editDraft.processStage === "analysis" && <Button variant="outline" size="sm" disabled={movingStageId === editDraft.localId} onClick={() => moveProcessStage(editDraft.localId, "consulting")}>Přesunout do poradenství</Button>}
                     </>}
