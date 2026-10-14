@@ -175,7 +175,9 @@ label [data-slot="select-trigger"] { width: 100%; }
 .filter-bar label { min-width: 160px; }
 .filter-bar [data-slot="select-trigger"] { min-width: 210px; }
 .filter-bar .person-filter { min-width: 270px; }
-.filter-bar .person-filter [data-slot="input-group"] { width: 100%; margin-top: .45rem; background: #fff; }
+.filter-bar .person-filter { display: block; }
+.filter-bar .person-filter [data-slot="input-group"] { width: 100%; height: 44px; min-height: 44px; margin-top: .45rem; border-radius: 12px; background: #fff; }
+.filter-bar .person-filter [data-slot="input-group-control"] { font-size: 1rem; font-weight: 700; }
 .filter-bar .filter-apply { margin-left: auto; }
 .manager-warning { margin: 0 0 14px; border: 1px solid #f0c36a; border-radius: 14px; background: #fff8df; padding: 13px 16px; color: #73510a; font-size: .86rem; }
 
