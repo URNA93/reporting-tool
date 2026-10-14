@@ -98,3 +98,8 @@ export function reportingPeriodsAround(
 
   return periods.reverse();
 }
+
+// Nejstarší období, které se nabízí ve filtru. Dřívější období aplikace nikdy
+// neměla, takže by jen zbytečně natahovala seznam; nová se přidávají sama,
+// jak čas plyne.
+export const FIRST_REPORTING_PERIOD_START = "2026-10-07";
