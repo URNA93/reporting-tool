@@ -210,11 +210,11 @@ export default function DashboardApp({
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [selectedUser, setSelectedUser] = useState("all");
-  const [selectedPeriod, setSelectedPeriod] = useState("all");
   const [stateFilter, setStateFilter] = useState("all");
   const [processStageFilter, setProcessStageFilter] = useState("all");
   const [alertFilter, setAlertFilter] = useState("all");
   const currentPeriod = reportingPeriods.find((period) => period.relation === "current")!;
+  const [selectedPeriod, setSelectedPeriod] = useState(currentPeriod.key);
   const [start] = useState(currentPeriod.start);
   const [end] = useState(currentPeriod.end);
   const [sending, setSending] = useState(false);
@@ -375,6 +375,12 @@ export default function DashboardApp({
     setAlertFilter("no_due");
     setItemsPage(1);
     await refresh(true, { alertFilter: "no_due" });
+  }
+
+  async function activateWithDueFilter() {
+    setAlertFilter("with_due");
+    setItemsPage(1);
+    await refresh(true, { alertFilter: "with_due" });
   }
 
   function updateItem(localId: string, patch: Partial<ReportItemDraft>) {
@@ -632,6 +638,13 @@ export default function DashboardApp({
 
       <section className="metric-grid" aria-label="Hlavní ukazatele">
         <article className="metric-card volume-card"><CircleGauge /><span>Objem v BU</span><strong>{formatVolumes(data.metrics.projectVolumes)}</strong></article>
+        {user.canManageReports ? (
+          <button type="button" className="metric-card volume-card metric-card-button" onClick={activateWithDueFilter}>
+            <CalendarClock /><span>Objem projektů s termínem</span><strong>{formatVolumes({ BU: data.metrics.projectVolumeWithDueDate })}</strong>
+          </button>
+        ) : (
+          <article className="metric-card volume-card"><CalendarClock /><span>Objem projektů s termínem</span><strong>{formatVolumes({ BU: data.metrics.projectVolumeWithDueDate })}</strong></article>
+        )}
         {user.canManageReports ? (
           <button type="button" className="metric-card volume-card metric-card-button" onClick={activateNoDueFilter}>
             <FolderKanban /><span>Objem projektů bez termínu</span><strong>{formatVolumes({ BU: data.metrics.projectVolumeWithoutDueDate })}</strong>

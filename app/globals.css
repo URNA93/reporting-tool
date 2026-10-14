@@ -181,7 +181,7 @@ label [data-slot="select-trigger"] { width: 100%; }
 .filter-bar .filter-apply { margin-left: auto; }
 .manager-warning { margin: 0 0 14px; border: 1px solid #f0c36a; border-radius: 14px; background: #fff8df; padding: 13px 16px; color: #73510a; font-size: .86rem; }
 
-.metric-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 14px; }
+.metric-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 14px; }
 .metric-card { min-height: 168px; display: grid; grid-template-columns: 1fr auto; align-content: space-between; padding: 24px; border: 1px solid var(--line); border-radius: 22px; background: var(--surface); box-shadow: 0 16px 40px rgba(33,29,25,.06); }
 .metric-card > svg { grid-column: 2; grid-row: 1; width: 24px; color: var(--orange); }
 .metric-card span { grid-column: 1; grid-row: 1; color: var(--ink-soft); font-size: .73rem; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
