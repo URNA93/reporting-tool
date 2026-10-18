@@ -81,3 +81,20 @@ test("přenesená položka (typ fall) jde upravit stejně jako projekt: pole BU 
   assert.match(dashboard, /\(projectLike \|\| item\.type === "consulting"\) && <><label>/);
   assert.match(dashboard, /unit: editDraft\.type === "project" \|\| editDraft\.type === "fall" \|\| editDraft\.type === "consulting" \? "BU" : null/);
 });
+
+test("úvodní rozhovor: při úpravě jde zapsat, jak dopadl; nový je vždy domluvený", async () => {
+  const validation = await readFile(new URL("../lib/validation.ts", import.meta.url), "utf8");
+  assert.match(validation, /validateReportItem\(value, context, true\)/, "úprava povoluje výsledek rozhovoru");
+  assert.match(validation, /!allowIntroOutcome && value\.status !== "scheduled"/);
+  const migration = await readFile(new URL("../supabase/migrations/202610180001_intro_outcome.sql", import.meta.url), "utf8");
+  assert.doesNotMatch(migration, /Úvodní rozhovor je vždy domluvený/);
+  assert.match(migration, /create or replace function public\.reporting_update_appointment/);
+  const dashboard = await readFile(new URL("../components/DashboardApp.tsx", import.meta.url), "utf8");
+  assert.match(dashboard, /\(!intro \|\| !onRemove\) && <label>\{intro \? "Jak dopadl" : "Stav"\}/);
+});
+
+test("filtry přehledu vidí každý, výběr reportéra jen manažer", async () => {
+  const dashboard = await readFile(new URL("../components/DashboardApp.tsx", import.meta.url), "utf8");
+  assert.match(dashboard, /<section className="filter-bar" aria-label="Filtry přehledu">/);
+  assert.match(dashboard, /\{user\.canManageReports && <label className="person-filter">/);
+});

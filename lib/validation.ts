@@ -30,7 +30,7 @@ const reportItemBase = z.object({
     note: z.string().trim().max(500).default(""),
   });
 
-function validateReportItem(value: z.infer<typeof reportItemBase>, context: z.RefinementCtx) {
+function validateReportItem(value: z.infer<typeof reportItemBase>, context: z.RefinementCtx, allowIntroOutcome = false) {
     if (value.type === "project" && !["active", "completed", "cancelled"].includes(value.status)) {
       context.addIssue({ code: "custom", message: "Projekt má neplatný stav.", path: ["status"] });
     }
@@ -55,7 +55,8 @@ function validateReportItem(value: z.infer<typeof reportItemBase>, context: z.Re
     if (value.type === "intro") {
       if (value.unit !== null || value.amount !== null) context.addIssue({ code: "custom", message: "Úvodní rozhovor nemá objem v BU.", path: ["amount"] });
       if (value.description.length > 0) context.addIssue({ code: "custom", message: "Úvodní rozhovor nemá téma.", path: ["description"] });
-      if (value.status !== "scheduled") context.addIssue({ code: "custom", message: "Úvodní rozhovor je vždy domluvený.", path: ["status"] });
+      // Nový úvodní rozhovor je vždy domluvený; jak dopadl (hotovo / zrušeno) se zapisuje až při úpravě.
+      if (!allowIntroOutcome && value.status !== "scheduled") context.addIssue({ code: "custom", message: "Úvodní rozhovor je vždy domluvený.", path: ["status"] });
       if (!value.dueDate || !value.dueTime) context.addIssue({ code: "custom", message: "Vyplň datum i čas úvodního rozhovoru.", path: ["dueDate"] });
     }
 }
@@ -93,7 +94,7 @@ export const revokeInvitationSchema = z.object({ invitationId: z.string().uuid()
 
 export const updateReportItemSchema = reportItemBase
   .extend({ itemId: z.string().uuid(), ownerId: z.string().uuid().nullable().optional() })
-  .superRefine(validateReportItem);
+  .superRefine((value, context) => validateReportItem(value, context, true));
 export const deleteReportItemSchema = z.object({
   itemId: z.string().uuid(),
   type: z.enum(["project", "fall", "analysis", "consulting", "intro"]),

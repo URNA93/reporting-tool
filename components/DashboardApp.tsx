@@ -593,8 +593,7 @@ export default function DashboardApp({
       {message && <div className="notice success">{message}</div>}
       {dashboardError && <div className="notice error" role="alert">{dashboardError}</div>}
 
-      {user.canManageReports && (
-        <section className="filter-bar" aria-label="Filtry přehledu">
+      <section className="filter-bar" aria-label="Filtry přehledu">
           <label>Období
             <Select value={selectedPeriod} onValueChange={choosePeriod}>
               <SelectTrigger aria-label="Vybrat reportovací období"><SelectValue>{selectedPeriod === "all" ? "Všechna období" : reportingPeriods.find((period) => period.key === selectedPeriod)?.label}</SelectValue></SelectTrigger>
@@ -606,7 +605,7 @@ export default function DashboardApp({
           </label>
           <label>Od <Input type="date" value={from} onChange={(event) => { setFrom(event.target.value); setItemsPage(1); }} /></label>
           <label>Do <Input type="date" value={to} onChange={(event) => { setTo(event.target.value); setItemsPage(1); }} /></label>
-          <label className="person-filter">Reportér
+          {user.canManageReports && <label className="person-filter">Reportér
             <Combobox
               items={personIds}
               value={selectedUser}
@@ -621,7 +620,7 @@ export default function DashboardApp({
                 </ComboboxList>
               </ComboboxContent>
             </Combobox>
-          </label>
+          </label>}
           <label>Stav položky
             <Select value={stateFilter} onValueChange={(value) => { setStateFilter(value); setItemsPage(1); }}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">Všechny stavy</SelectItem><SelectItem value="active">Aktivní</SelectItem><SelectItem value="completed">Dokončené</SelectItem><SelectItem value="cancelled">Zrušené</SelectItem></SelectContent></Select>
           </label>
@@ -634,7 +633,6 @@ export default function DashboardApp({
           <Button className="filter-apply" variant="outline" onClick={() => refresh()}><RefreshCw /> Použít</Button>
           <Button variant="ghost" onClick={clearFilters}>Celkový přehled</Button>
         </section>
-      )}
 
       <section className="metric-grid" aria-label="Hlavní ukazatele">
         <article className="metric-card volume-card"><CircleGauge /><span>Objem v BU</span><strong>{formatVolumes(data.metrics.projectVolumes)}</strong></article>
@@ -907,7 +905,7 @@ function ReportItemCard({
         <label>Termín<Input type="date" value={item.dueDate ?? ""} onChange={(event) => onChange({ dueDate: event.target.value || null })} /></label>
         {(appointment || projectConsulting) && <label>Čas<Input type="time" value={item.dueTime ?? ""} onChange={(event) => onChange({ dueTime: event.target.value || null })} /></label>}
         {!appointment && <label>Fáze<Select value={item.phase ?? "new"} onValueChange={(value) => onChange({ phase: value as ProjectPhase })}><SelectTrigger><SelectValue>{phaseLabels[item.phase ?? "new"]}</SelectValue></SelectTrigger><SelectContent>{(Object.keys(phaseLabels) as ProjectPhase[]).map((phase) => <SelectItem key={phase} value={phase}>{phaseLabels[phase]}</SelectItem>)}</SelectContent></Select></label>}
-        {!intro && <label>Stav<Select value={item.status} onValueChange={(value) => onChange({ status: value as ItemStatus })}><SelectTrigger><SelectValue>{statusLabels[item.status]}</SelectValue></SelectTrigger><SelectContent>{statusOptions.map((status) => <SelectItem key={status} value={status}>{statusLabels[status]}</SelectItem>)}</SelectContent></Select></label>}
+        {(!intro || !onRemove) && <label>{intro ? "Jak dopadl" : "Stav"}<Select value={item.status} onValueChange={(value) => onChange({ status: value as ItemStatus })}><SelectTrigger><SelectValue>{statusLabels[item.status]}</SelectValue></SelectTrigger><SelectContent>{statusOptions.map((status) => <SelectItem key={status} value={status}>{statusLabels[status]}</SelectItem>)}</SelectContent></Select></label>}
         <label className="wide-field">{item.status === "cancelled" && !appointment ? "Důvod zrušení" : "Poznámka"}<Input value={item.note} onChange={(event) => onChange({ note: event.target.value })} placeholder={item.status === "cancelled" && !appointment ? "Povinné" : "Volitelné"} /></label>
       </div>
     </div>
